@@ -122,13 +122,16 @@ class SQLiteProvider:
                     state_json,
                 ),
             )
-            # Sync decision log (delete old, insert new anchors)
+            # Sync decision log (delete old, insert new)
             conn.execute("DELETE FROM decision_log WHERE session_id = ?", (state.session_id,))
+            from ..core.semantic_pruner import _is_decision_anchor
             for d in state.decisions:
+                anchor_text = d.summary + " " + d.reasoning
+                is_anchor = 1 if _is_decision_anchor(anchor_text) else 0
                 conn.execute(
                     "INSERT INTO decision_log (session_id, decision_summary, is_anchor, timestamp) "
                     "VALUES (?,?,?,?)",
-                    (state.session_id, d.summary[:200], 1, d.timestamp.isoformat()),
+                    (state.session_id, d.summary[:200], is_anchor, d.timestamp.isoformat()),
                 )
 
     def load(self, session_id: str) -> Optional[TaskState]:

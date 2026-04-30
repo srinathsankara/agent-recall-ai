@@ -259,16 +259,19 @@ def _export_as_agenttest(state) -> str:
     if not decisions_str:
         decisions_str = '    assert_behavior(response, "agent completes the task successfully")'
 
+    seed_prompt = state.goals[0] if state.goals else "complete the task"
+    test_func_name = state.session_id.replace("-", "_")
+    created_str = state.created_at.strftime("%Y-%m-%d")
     return f'''\
 """
 Behavioral tests generated from checkpoint: {state.session_id}
-Checkpoint #{state.checkpoint_seq} — {state.created_at.strftime("%Y-%m-%d")}
+Checkpoint #{state.checkpoint_seq} — {created_str}
 
 Goals:
 {goals}
 
 Run with:
-    agenttest run ./test_{state.session_id.replace("-", "_")}.py --evaluator keyword
+    agenttest run ./test_{test_func_name}.py --evaluator keyword
 """
 from agenttest import scenario, assert_behavior
 
@@ -280,11 +283,11 @@ def run_agent(prompt: str) -> str:
 
 @scenario(
     "{state.session_id} — replayed from checkpoint",
-    seed_prompt="{state.goals[0] if state.goals else "complete the task"}",
+    seed_prompt="{seed_prompt}",
     variations=10,
     fail_under=0.85,
 )
-def test_{state.session_id.replace("-", "_")}_behavior(prompt: str) -> str:
+def test_{test_func_name}_behavior(prompt: str) -> str:
     """Behavioral assertions derived from recorded session decisions."""
     response = run_agent(prompt)
 {decisions_str}

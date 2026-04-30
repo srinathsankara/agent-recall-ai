@@ -93,14 +93,14 @@ class CrewAIAdapter(BaseAdapter):
             # Record the crew's goal as a checkpoint goal
             crew_description = getattr(crew, "description", None) or ""
             if crew_description:
-                adapter._checkpoint.set_context(f"CrewAI run: {crew_description[:200]}")
+                adapter.checkpoint.set_context(f"CrewAI run: {crew_description[:200]}")
 
             # Record each agent role as a goal
             for agent in getattr(crew, "agents", []):
                 role = getattr(agent, "role", None)
                 goal = getattr(agent, "goal", None)
                 if role and goal:
-                    adapter._checkpoint.set_goal(f"[{role}] {goal[:150]}")
+                    adapter.checkpoint.set_goal(f"[{role}] {goal[:150]}")
 
             # Wrap each task to record its completion
             tasks = getattr(crew, "tasks", []) or []
@@ -108,7 +108,7 @@ class CrewAIAdapter(BaseAdapter):
                 _wrap_task(task, adapter)
 
             # Save a "started" checkpoint
-            adapter._checkpoint.save()
+            adapter.checkpoint.save()
 
             try:
                 result = original_kickoff(*args, **kw)
@@ -118,7 +118,7 @@ class CrewAIAdapter(BaseAdapter):
 
             # Record the overall result
             result_str = str(result)[:adapter._max_output_chars] if result else ""
-            adapter._checkpoint.record_decision(
+            adapter.checkpoint.record_decision(
                 "Crew run completed",
                 reasoning=result_str,
                 tags=["crewai", "final_result"],
@@ -157,7 +157,7 @@ def _wrap_task(task: Any, adapter: "CrewAIAdapter") -> None:
         output = str(result)[:adapter._max_output_chars] if result else ""
 
         if adapter._record_task_outputs:
-            adapter._checkpoint.record_decision(
+            adapter.checkpoint.record_decision(
                 summary=f"Task completed: {task_desc[:80]}",
                 reasoning=output,
                 tags=["crewai", f"agent:{agent_role}"],
@@ -166,7 +166,7 @@ def _wrap_task(task: Any, adapter: "CrewAIAdapter") -> None:
         # Track expected output file if specified
         output_file = getattr(self_task, "output_file", None)
         if output_file:
-            adapter._checkpoint.record_file_modified(
+            adapter.checkpoint.record_file_modified(
                 path=output_file,
                 action="created",
                 description=f"Output from task: {task_desc[:60]}",

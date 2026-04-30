@@ -37,6 +37,7 @@ class ToolBloatMonitor(BaseMonitor):
         self.max_tool_fraction = max_tool_fraction
         self.auto_compress = auto_compress
         self._alerted_tools: set[str] = set()
+        self._fraction_alerted: bool = False
 
     def check(self, state: "TaskState") -> list[dict]:
         return []
@@ -80,11 +81,12 @@ class ToolBloatMonitor(BaseMonitor):
                     },
                 })
 
-        # Check cumulative tool fraction
-        if state.token_usage.total > 0:
+        # Check cumulative tool fraction (fire only once per crossing)
+        if state.token_usage.total > 0 and not self._fraction_alerted:
             tool_tokens = sum(tc.output_tokens for tc in state.tool_calls)
             fraction = tool_tokens / max(state.token_usage.total, 1)
             if fraction > self.max_tool_fraction:
+                self._fraction_alerted = True
                 alerts.append({
                     "alert_type": AlertType.TOOL_BLOAT,
                     "severity": AlertSeverity.WARN,

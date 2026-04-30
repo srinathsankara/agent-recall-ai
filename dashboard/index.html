@@ -596,6 +596,10 @@ k8s: {
     "Re-run helm upgrade after memory investigation resolves",
     "Set up Grafana dashboards for memory monitoring going forward"
   ],
+  open_questions: [
+    "Is the 512Mi memory limit per pod still correct given recent load test data?",
+    "Should we add Vault namespace isolation between staging and production?"
+  ],
   token_usage: { prompt: 127000, completion: 24800, cached: 0 },
   cost_usd: 0.2891,
   context_utilization: 1.0,
@@ -624,7 +628,7 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function fmt(n){ return Number(n).toLocaleString() }
 
 function isAnchor(text){
-  const kws=['decided','decision','rejected','architecture','because','must not','never','constraint','chosen','alternative','trade-off','tradeoff','rationale','therefore','agreed','principle','rule','avoid','chosen','critical'];
+  const kws=['decided','decision','rejected','architecture','because','must not','never','constraint','chosen','alternative','trade-off','tradeoff','rationale','therefore','agreed','principle','rule','avoid','forbidden','critical','required','requirement'];
   const low=(text||'').toLowerCase();
   return kws.some(k=>low.includes(k));
 }
@@ -753,7 +757,7 @@ function renderOverview(){
   const total = (tu.prompt||0)+(tu.completion||0);
   const cached = tu.cached||0;
   const ctx = Math.round((d.context_utilization||0)*100);
-  const fillClass = ctx<70?'fill-green':ctx<90?'fill-yellow':'fill-red';
+  const fillClass = ctx<75?'fill-green':ctx<88?'fill-yellow':'fill-red';
   const anchors = (d.decisions||[]).filter(dec=>isAnchor(dec.summary)||isAnchor(dec.reasoning||''));
 
   // Recent decisions (last 3)
@@ -846,6 +850,17 @@ function renderOverview(){
 
     <!-- Next steps — clearly labeled task list -->
     ${renderNextStepsCard(d)}
+
+    <!-- Open questions -->
+    ${(d.open_questions||[]).length>0?`
+    <div class="card">
+      <div class="card-title">❓ Open Questions</div>
+      ${(d.open_questions||[]).map((q,i)=>`
+        <div style="display:flex;gap:.6rem;align-items:flex-start;padding:.45rem 0;${i>0?'border-top:1px solid var(--border)':''}">
+          <span style="color:var(--yellow);flex-shrink:0;margin-top:.05rem">?</span>
+          <span style="font-size:.8rem;line-height:1.5">${esc(q)}</span>
+        </div>`).join('')}
+    </div>`:''}
 
     <!-- Context summary -->
     ${d.context_summary?`
@@ -984,8 +999,9 @@ function buildTimeline(d){
   events.push({ type:'session', title:'Session started', sub: d.session_id, ts: d.decisions&&d.decisions[0]? new Date(d.decisions[0].timestamp).getTime()-60000 : Date.now(), icon:'🚀', extra: d });
   // Decisions
   (d.decisions||[]).forEach(dec=>{ events.push({type:'decision',title:dec.summary,sub:'Decision'+(isAnchor(dec.summary)||isAnchor(dec.reasoning||'')?'  ⚓ Anchor':''),ts:new Date(dec.timestamp).getTime(),icon:'🧠',extra:dec}); });
-  // Files
-  (d.files_modified||[]).forEach(f=>{ events.push({type:'file',title:f.path,sub:f.action+(f.description?' — '+f.description:''),ts: new Date( (d.decisions||[{timestamp:new Date().toISOString()}]).slice(-1)[0].timestamp ).getTime()+(Math.random()*3600000),icon:fileExt(f.path),extra:f}); });
+  // Files — derive timestamp from last decision or session start if not provided
+  const _baseTs = d.decisions&&d.decisions.length? new Date(d.decisions[d.decisions.length-1].timestamp).getTime() : Date.now();
+  (d.files_modified||[]).forEach((f,fi)=>{ events.push({type:'file',title:f.path,sub:f.action+(f.description?' — '+f.description:''),ts:f.timestamp?new Date(f.timestamp).getTime():_baseTs+fi*60000,icon:fileExt(f.path),extra:f}); });
   // Tool calls
   (d.tool_calls||[]).forEach(tc=>{ events.push({type:'tool',title:tc.tool_name,sub:tc.input_summary+(tc.output_summary?' → '+tc.output_summary:''),ts:new Date(tc.timestamp).getTime(),icon:'🔧',extra:tc}); });
   // Alerts
@@ -1059,14 +1075,36 @@ function renderTokens(){
   const total = (tu.prompt||0)+(tu.completion||0);
   const cached = tu.cached||0;
   const ctx = Math.round((d.context_utilization||0)*100);
-  const fillClass = ctx<70?'fill-green':ctx<90?'fill-yellow':'fill-red';
+  const fillClass = ctx<75?'fill-green':ctx<88?'fill-yellow':'fill-red';
   const model = (d.metadata||{}).model||'unknown';
   const costs = {
-    'claude-opus-4-7':   {i:15.00,o:75.00,c:1.50},
-    'claude-sonnet-4-6': {i:3.00, o:15.00,c:0.30},
-    'claude-haiku-4-5':  {i:0.80, o:4.00, c:0.08},
-    'gpt-4o':            {i:5.00, o:15.00,c:2.50},
-    'gpt-4o-mini':       {i:0.15, o:0.60, c:0.075}
+    'claude-opus-4-7':              {i:15.00, o:75.00, c:1.50},
+    'claude-opus-4-5':              {i:15.00, o:75.00, c:1.50},
+    'claude-sonnet-4-6':            {i:3.00,  o:15.00, c:0.30},
+    'claude-sonnet-4-5':            {i:3.00,  o:15.00, c:0.30},
+    'claude-haiku-4-5':             {i:0.80,  o:4.00,  c:0.08},
+    'claude-3-5-sonnet-20241022':   {i:3.00,  o:15.00, c:0.30},
+    'claude-3-5-sonnet-latest':     {i:3.00,  o:15.00, c:0.30},
+    'claude-3-5-haiku-20241022':    {i:0.80,  o:4.00,  c:0.08},
+    'claude-3-5-haiku-latest':      {i:0.80,  o:4.00,  c:0.08},
+    'claude-3-opus-20240229':       {i:15.00, o:75.00, c:1.50},
+    'claude-3-haiku-20240307':      {i:0.25,  o:1.25,  c:0.03},
+    'gpt-4o':                       {i:2.50,  o:10.00, c:1.25},
+    'gpt-4o-2024-11-20':            {i:2.50,  o:10.00, c:1.25},
+    'gpt-4o-2024-08-06':            {i:2.50,  o:10.00, c:1.25},
+    'gpt-4o-mini':                  {i:0.15,  o:0.60,  c:0.075},
+    'gpt-4o-mini-2024-07-18':       {i:0.15,  o:0.60,  c:0.075},
+    'gpt-4.1':                      {i:2.00,  o:8.00,  c:0.50},
+    'gpt-4.1-mini':                 {i:0.40,  o:1.60,  c:0.10},
+    'gpt-4.1-nano':                 {i:0.10,  o:0.40,  c:0.025},
+    'o1':                           {i:15.00, o:60.00, c:7.50},
+    'o3':                           {i:10.00, o:40.00, c:2.50},
+    'o3-mini':                      {i:1.10,  o:4.40,  c:0.55},
+    'o4-mini':                      {i:1.10,  o:4.40,  c:0.275},
+    'gemini-2.0-flash':             {i:0.10,  o:0.40,  c:0.025},
+    'gemini-2.0-flash-lite':        {i:0.075, o:0.30,  c:0.019},
+    'gemini-1.5-pro':               {i:1.25,  o:5.00,  c:0.3125},
+    'gemini-1.5-flash':             {i:0.075, o:0.30,  c:0.019},
   };
   const mc = costs[model]||{i:3.00,o:15.00,c:0.30};
   const promptCost  = ((tu.prompt||0)-cached)/1000000*mc.i;
@@ -1135,7 +1173,7 @@ function renderTokens(){
         <div class="bar-track" style="height:14px"><div class="bar-fill ${fillClass}" style="width:${ctx}%"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:.3rem">
           <span>${ctx}% used</span>
-          <span style="color:${ctx>=90?'var(--red)':ctx>=70?'var(--yellow)':'var(--green)'}">${ctx<70?'✅ Healthy':ctx<90?'⚠️ Getting full':'🚨 Critical — checkpoint now!'}</span>
+          <span style="color:${ctx>=88?'var(--red)':ctx>=75?'var(--yellow)':'var(--green)'}">${ctx<75?'✅ Healthy':ctx<88?'⚠️ Getting full':'🚨 Critical — checkpoint now!'}</span>
         </div>
       </div>
       ${cached>0?`
@@ -1435,8 +1473,18 @@ function showResumePrompt(){
   if(d.context_summary){ lines.push('### Context'); lines.push(d.context_summary); lines.push(''); }
   if(d.decisions&&d.decisions.length){
     lines.push('### Key Decisions');
-    d.decisions.slice(-8).forEach(dec=>{
-      lines.push(`- **${dec.summary}**`);
+    // Always include Decision Anchors from all time + last 8 recent decisions
+    const allDecs = d.decisions||[];
+    const recentSet = new Set(allDecs.slice(-8).map((_,i)=>allDecs.length-8+i));
+    const anchorsOutsideRecent = allDecs.slice(0,-8).filter(dec=>isAnchor(dec.summary)||isAnchor(dec.reasoning||''));
+    const recent = allDecs.slice(-8);
+    const seenIds = new Set();
+    const showDecs = [];
+    [...anchorsOutsideRecent, ...recent].forEach(dec=>{ if(!seenIds.has(dec.id)){ seenIds.add(dec.id); showDecs.push(dec); } });
+    if(allDecs.length>showDecs.length) lines.push(`  *(+${allDecs.length-showDecs.length} routine decisions omitted — all anchors preserved)*`);
+    showDecs.forEach(dec=>{
+      const mark = (isAnchor(dec.summary)||isAnchor(dec.reasoning||''))?' ⚓':'';
+      lines.push(`- **${dec.summary}**${mark}`);
       if(dec.reasoning) lines.push(`  Reason: ${dec.reasoning.slice(0,120)}`);
       if((dec.alternatives_rejected||[]).length) lines.push(`  Rejected: ${dec.alternatives_rejected.join(', ')}`);
     });
@@ -1485,12 +1533,16 @@ function loadFile(event){
       opt.textContent = '📂 ' + (data.session_id||'custom') + '  (loaded)';
       sel.value = 'custom';
       currentSession = data;
+      activeDecisionFilter = null;
+      decisionSearch = '';
       closePanel();
       renderAll();
       showToast('Loaded: ' + (data.session_id||'custom'));
     } catch(err){
-      showToast('Invalid JSON: ' + err.message);
+      showToast('❌ Invalid JSON: ' + err.message);
     }
+    // Reset file input so the same file can be loaded again
+    event.target.value = '';
   };
   reader.readAsText(file);
 }
@@ -1500,8 +1552,8 @@ function loadFile(event){
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape') closePanel();
-  if(e.key>='1'&&e.key<='5'&&!e.ctrlKey&&!e.metaKey&&e.target.tagName!=='INPUT'){
-    const tabs=['overview','decisions','timeline','files','tokens'];
+  if(e.key>='1'&&e.key<='6'&&!e.ctrlKey&&!e.metaKey&&e.target.tagName!=='INPUT'){
+    const tabs=['overview','decisions','timeline','files','tokens','alerts'];
     switchTab(tabs[parseInt(e.key)-1]);
   }
 });

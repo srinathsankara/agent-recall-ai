@@ -5,6 +5,7 @@ Same interface as DiskStore but no persistence.
 from __future__ import annotations
 
 import copy
+from datetime import datetime, timezone
 from typing import Optional
 
 from ..core.state import SessionStatus, TaskState
@@ -18,6 +19,7 @@ class MemoryStore:
 
     def save(self, state: TaskState) -> None:
         state.checkpoint_seq += 1
+        state.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         self._sessions[state.session_id] = copy.deepcopy(state)
 
     def load(self, session_id: str) -> Optional[TaskState]:

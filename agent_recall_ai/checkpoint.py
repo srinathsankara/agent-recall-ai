@@ -158,7 +158,9 @@ class Checkpoint:
         reasoning: str = "",
         alternatives_rejected: Optional[list[str]] = None,
         tags: Optional[list[str]] = None,
-    ) -> None:
+    ) -> Any:
+        """Record a decision. Returns the Decision object for chaining or inspection."""
+        from .core.state import Decision as _Decision
         decision = self._state.add_decision(
             summary=summary,
             reasoning=reasoning,
@@ -166,6 +168,7 @@ class Checkpoint:
             tags=tags or [],
         )
         self._run_monitors("on_decision")
+        return decision
 
     def record_file_modified(self, path: str, action: str = "modified", description: str = "") -> None:
         self._state.add_file(path=path, action=action, description=description)
@@ -460,6 +463,9 @@ def checkpoint(
     class _CheckpointFactoryOrDecorator:
         """Returned by checkpoint() — usable as decorator or context manager."""
 
+        def __init__(self) -> None:
+            self._cp: Optional[Checkpoint] = None
+
         def __call__(self, fn: Callable) -> Callable:           # @checkpoint("id")
             return decorator(fn)
 
@@ -468,13 +474,15 @@ def checkpoint(
             return self._cp.__enter__()
 
         def __exit__(self, *a: Any) -> None:
-            self._cp.__exit__(*a)
+            if self._cp is not None:
+                self._cp.__exit__(*a)
 
         async def __aenter__(self) -> Checkpoint:               # async with checkpoint("id") as cp:
             self._cp = _make_cp()
             return await self._cp.__aenter__()
 
         async def __aexit__(self, *a: Any) -> None:
-            await self._cp.__aexit__(*a)
+            if self._cp is not None:
+                await self._cp.__aexit__(*a)
 
     return _CheckpointFactoryOrDecorator()

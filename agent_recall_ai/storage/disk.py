@@ -29,6 +29,7 @@ class DiskStore:
         conn = sqlite3.connect(str(self._db_path))
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
 
@@ -136,6 +137,40 @@ class DiskStore:
                 "SELECT 1 FROM sessions WHERE session_id = ?", (session_id,)
             ).fetchone()
             return row is not None
+
+    def search_decisions(self, query: str, limit: int = 20) -> list[dict]:
+        """
+        Search decisions across all sessions by substring match.
+
+        Deserializes each session's state_json to scan decisions — use
+        SQLiteProvider for a dedicated decision_log table with indexed search.
+        Returns list of dicts with: session_id, decision_summary, timestamp, goal_summary.
+        """
+        query_lower = query.lower()
+        results: list[dict] = []
+
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT session_id, goal_summary, state_json FROM sessions ORDER BY updated_at DESC"
+            ).fetchall()
+
+        for row in rows:
+            try:
+                state = TaskState.model_validate_json(row["state_json"])
+            except Exception:
+                continue
+            for d in state.decisions:
+                if query_lower in d.summary.lower() or query_lower in d.reasoning.lower():
+                    results.append({
+                        "session_id": row["session_id"],
+                        "decision_summary": d.summary[:200],
+                        "timestamp": d.timestamp.isoformat(),
+                        "goal_summary": row["goal_summary"],
+                    })
+                    if len(results) >= limit:
+                        return results
+
+        return results
 
     def count(self) -> int:
         with self._connect() as conn:

@@ -173,9 +173,10 @@ class _WrappedChatCompletions:
             repaired, n = repair_conversation(messages)
             if n > 0:
                 kwargs = {**kwargs, "messages": repaired}
-                self._adapter._checkpoint.state.add_alert(
-                    alert_type="behavioral_drift",  # type: ignore[arg-type]
-                    severity="warn",                # type: ignore[arg-type]
+                from ..core.state import AlertType, AlertSeverity
+                self._adapter.checkpoint.state.add_alert(
+                    alert_type=AlertType.BEHAVIORAL_DRIFT,
+                    severity=AlertSeverity.WARN,
                     message=f"ConversationRepair: fixed {n} orphaned tool_call ID(s) before API call",
                     detail={"repaired_count": n},
                 )

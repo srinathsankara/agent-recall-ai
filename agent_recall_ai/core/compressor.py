@@ -134,9 +134,14 @@ def compress_conversation_history(
             tokens_saved += original_tokens - compressed_tokens
             result.append({**msg, "content": compressed})
             running_total += compressed_tokens
-        # else: drop the message entirely (budget exhausted, not a protected message)
-        # Record that something was dropped
-        # (In production you'd add a compression notice here)
+        else:
+            # Drop this message — budget exhausted; insert a notice so the model
+            # knows context was trimmed rather than silently losing information.
+            tokens_saved += original_tokens
+            result.append({
+                "role": "system",
+                "content": f"[1 message omitted — context budget exhausted ({original_tokens} tokens saved)]",
+            })
 
     return result, tokens_saved
 

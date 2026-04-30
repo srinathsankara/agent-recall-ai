@@ -9,43 +9,89 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-# Cost per 1M tokens (USD) — updated June 2025
+# Cost per 1M tokens (USD) — updated April 2026
 _MODEL_COSTS: dict[str, dict[str, float]] = {
-    # OpenAI
-    "gpt-4o": {"input": 5.00, "output": 15.00, "cached": 2.50},
+    # OpenAI — GPT-4o family
+    "gpt-4o": {"input": 2.50, "output": 10.00, "cached": 1.25},
     "gpt-4o-mini": {"input": 0.15, "output": 0.60, "cached": 0.075},
+    # Dated GPT-4o snapshots (aliases to current pricing)
+    "gpt-4o-2024-11-20": {"input": 2.50, "output": 10.00, "cached": 1.25},
+    "gpt-4o-2024-08-06": {"input": 2.50, "output": 10.00, "cached": 1.25},
+    "gpt-4o-2024-05-13": {"input": 5.00, "output": 15.00, "cached": 2.50},
+    "gpt-4o-mini-2024-07-18": {"input": 0.15, "output": 0.60, "cached": 0.075},
+    # OpenAI — GPT-4.1 family (2025)
+    "gpt-4.1": {"input": 2.00, "output": 8.00, "cached": 0.50},
+    "gpt-4.1-mini": {"input": 0.40, "output": 1.60, "cached": 0.10},
+    "gpt-4.1-nano": {"input": 0.10, "output": 0.40, "cached": 0.025},
+    # OpenAI — legacy / reasoning
     "gpt-4-turbo": {"input": 10.00, "output": 30.00, "cached": 5.00},
     "gpt-3.5-turbo": {"input": 0.50, "output": 1.50, "cached": 0.25},
     "o1": {"input": 15.00, "output": 60.00, "cached": 7.50},
     "o1-mini": {"input": 3.00, "output": 12.00, "cached": 1.50},
+    "o1-pro": {"input": 150.00, "output": 600.00, "cached": 75.00},
+    "o3": {"input": 10.00, "output": 40.00, "cached": 2.50},
     "o3-mini": {"input": 1.10, "output": 4.40, "cached": 0.55},
-    # Anthropic
+    "o4-mini": {"input": 1.10, "output": 4.40, "cached": 0.275},
+    # Anthropic — Claude 4 family (canonical names)
     "claude-opus-4-7": {"input": 15.00, "output": 75.00, "cached": 1.50},
+    "claude-opus-4-5": {"input": 15.00, "output": 75.00, "cached": 1.50},
     "claude-sonnet-4-6": {"input": 3.00, "output": 15.00, "cached": 0.30},
+    "claude-sonnet-4-5": {"input": 3.00, "output": 15.00, "cached": 0.30},
     "claude-haiku-4-5": {"input": 0.80, "output": 4.00, "cached": 0.08},
+    # Anthropic — Claude 3.5 family
     "claude-3-5-sonnet-20241022": {"input": 3.00, "output": 15.00, "cached": 0.30},
+    "claude-3-5-sonnet-latest": {"input": 3.00, "output": 15.00, "cached": 0.30},
     "claude-3-5-haiku-20241022": {"input": 0.80, "output": 4.00, "cached": 0.08},
+    "claude-3-5-haiku-latest": {"input": 0.80, "output": 4.00, "cached": 0.08},
+    # Anthropic — Claude 3 family
+    "claude-3-opus-20240229": {"input": 15.00, "output": 75.00, "cached": 1.50},
+    "claude-3-sonnet-20240229": {"input": 3.00, "output": 15.00, "cached": 0.30},
+    "claude-3-haiku-20240307": {"input": 0.25, "output": 1.25, "cached": 0.03},
     # Google
     "gemini-2.0-flash": {"input": 0.10, "output": 0.40, "cached": 0.025},
+    "gemini-2.0-flash-lite": {"input": 0.075, "output": 0.30, "cached": 0.019},
     "gemini-1.5-pro": {"input": 1.25, "output": 5.00, "cached": 0.3125},
+    "gemini-1.5-flash": {"input": 0.075, "output": 0.30, "cached": 0.019},
 }
 
 # Context window sizes (in tokens)
 _MODEL_CONTEXT: dict[str, int] = {
+    # OpenAI
     "gpt-4o": 128_000,
     "gpt-4o-mini": 128_000,
+    "gpt-4o-2024-11-20": 128_000,
+    "gpt-4o-2024-08-06": 128_000,
+    "gpt-4o-2024-05-13": 128_000,
+    "gpt-4o-mini-2024-07-18": 128_000,
+    "gpt-4.1": 1_047_576,
+    "gpt-4.1-mini": 1_047_576,
+    "gpt-4.1-nano": 1_047_576,
     "gpt-4-turbo": 128_000,
     "gpt-3.5-turbo": 16_385,
     "o1": 200_000,
     "o1-mini": 128_000,
+    "o1-pro": 200_000,
+    "o3": 200_000,
     "o3-mini": 200_000,
+    "o4-mini": 200_000,
+    # Anthropic
     "claude-opus-4-7": 200_000,
+    "claude-opus-4-5": 200_000,
     "claude-sonnet-4-6": 200_000,
+    "claude-sonnet-4-5": 200_000,
     "claude-haiku-4-5": 200_000,
     "claude-3-5-sonnet-20241022": 200_000,
+    "claude-3-5-sonnet-latest": 200_000,
     "claude-3-5-haiku-20241022": 200_000,
-    "gemini-2.0-flash": 1_000_000,
-    "gemini-1.5-pro": 2_000_000,
+    "claude-3-5-haiku-latest": 200_000,
+    "claude-3-opus-20240229": 200_000,
+    "claude-3-sonnet-20240229": 200_000,
+    "claude-3-haiku-20240307": 200_000,
+    # Google
+    "gemini-2.0-flash": 1_048_576,
+    "gemini-2.0-flash-lite": 1_048_576,
+    "gemini-1.5-pro": 2_097_152,
+    "gemini-1.5-flash": 1_048_576,
 }
 
 

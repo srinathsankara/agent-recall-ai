@@ -214,8 +214,41 @@ class TaskState(BaseModel):
 
         if self.decisions:
             lines.append("### Decisions Made")
-            for d in self.decisions[-10:]:   # last 10 to stay concise
-                lines.append(f"- **{d.summary}**")
+            # Always include Decision Anchors (they contain critical reasoning) plus last 8 recent decisions.
+            # Decision Anchors contain keywords like "decided", "rejected", "because", "constraint" etc.
+            _anchor_kws = frozenset({
+                "decided", "decision", "rejected", "architecture", "because",
+                "must not", "never", "constraint", "chosen", "alternative",
+                "trade-off", "tradeoff", "critical", "required", "rationale",
+                "agreed", "principle", "rule", "avoid", "forbidden",
+            })
+
+            def _is_anchor(d: "Decision") -> bool:  # noqa: F821
+                text = (d.summary + " " + d.reasoning).lower()
+                return any(kw in text for kw in _anchor_kws)
+
+            recent_set = set(id(d) for d in self.decisions[-8:])
+            anchors_outside_recent = [d for d in self.decisions[:-8] if _is_anchor(d)]
+            recent = self.decisions[-8:]
+            # Build deduplicated ordered list: anchors first (oldest→newest), then recent
+            seen: set[str] = set()
+            show_decisions: list[Decision] = []
+            for d in anchors_outside_recent:
+                if d.id not in seen:
+                    seen.add(d.id)
+                    show_decisions.append(d)
+            for d in recent:
+                if d.id not in seen:
+                    seen.add(d.id)
+                    show_decisions.append(d)
+
+            if len(self.decisions) > len(show_decisions):
+                omitted = len(self.decisions) - len(show_decisions)
+                lines.append(f"  *(+{omitted} routine decisions omitted — all anchors preserved)*")
+
+            for d in show_decisions:
+                anchor_marker = " ⚓" if _is_anchor(d) else ""
+                lines.append(f"- **{d.summary}**{anchor_marker}")
                 if d.reasoning:
                     lines.append(f"  Reason: {d.reasoning}")
                 if d.alternatives_rejected:
