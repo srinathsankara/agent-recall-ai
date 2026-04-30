@@ -1,0 +1,178 @@
+// agent-recall-ai Universal AgentState Schema
+// Version: 1.0.0
+//
+// This schema defines the canonical interchange format for agent session state.
+// Any framework (LangChain, OpenAI SDK, Anthropic SDK, custom agents) can
+// serialize to and deserialize from this format, enabling:
+//   - Cross-framework session handoffs
+//   - Persistent resume after context death
+//   - Multi-agent coordination state sharing
+//   - Behavioral test fixture generation (agenttest integration)
+//
+// Compile:
+//   pip install grpcio-tools
+//   python -m grpc_tools.protoc -I./proto --python_out=. --grpc_python_out=. proto/schema.proto
+
+syntax = "proto3";
+
+package agent_recall_ai;
+
+option py_generic_services = true;
+
+// ── Core message types ──────────────────────────────────────────────────────
+
+// A single architectural decision recorded during a session.
+// These are "Decision Anchors" — protected from semantic compression.
+message Decision {
+  string id               = 1;   // 8-char hex UUID fragment
+  string summary          = 2;   // What was decided (human-readable)
+  string reasoning        = 3;   // Why this choice was made
+  repeated string alternatives_rejected = 4;  // What was considered and rejected
+  uint64 timestamp_ms     = 5;   // Unix milliseconds
+  repeated string tags    = 6;   // e.g. ["architecture", "security", "rejected"]
+  bool is_anchor          = 7;   // True if this is a decision anchor (never prune)
+}
+
+// A file or artifact touched during the session.
+message ArtifactChange {
+  string path             = 1;   // Relative file path
+  string action           = 2;   // created | modified | deleted | read
+  string content_hash     = 3;   // SHA-256 of content at checkpoint time
+  string delta_summary    = 4;   // Human-readable description of change
+  uint64 timestamp_ms     = 5;
+}
+
+// Real-time token usage telemetry.
+message TokenUsage {
+  uint64 prompt_tokens    = 1;
+  uint64 completion_tokens = 2;
+  uint64 cached_tokens    = 3;
+  double cost_usd         = 4;
+  uint32 call_count       = 5;
+}
+
+// A monitor alert raised during the session.
+message Alert {
+  string alert_type       = 1;   // e.g. "cost_warning", "token_pressure"
+  string severity         = 2;   // info | warn | error | critical
+  string message          = 3;
+  uint64 timestamp_ms     = 4;
+  bool acknowledged       = 5;
+}
+
+// A recorded tool invocation.
+message ToolCall {
+  string tool_name        = 1;
+  string input_summary    = 2;
+  string output_summary   = 3;
+  uint32 output_tokens    = 4;
+  bool compressed         = 5;
+  uint64 timestamp_ms     = 6;
+}
+
+// ── Primary checkpoint message ───────────────────────────────────────────────
+
+// The canonical checkpoint record. Fully self-contained — reading this alone
+// is sufficient to resume the task in a brand-new context window.
+message Checkpoint {
+  // Identity
+  string task_id          = 1;   // Unique session identifier (e.g. "refactor-auth-v2")
+  uint64 timestamp        = 2;   // Creation timestamp (Unix seconds)
+  uint64 updated_at       = 3;   // Last update timestamp (Unix seconds)
+  uint32 checkpoint_seq   = 4;   // Monotonically increasing save counter
+  string status           = 5;   // active | completed | failed | suspended
+
+  // Task definition — what the agent is trying to accomplish
+  repeated string goals         = 6;
+  repeated string constraints   = 7;
+  string context_summary        = 8;   // Freeform context (human-written or auto-generated)
+
+  // What has been done
+  repeated Decision decisions           = 9;
+  repeated ArtifactChange artifacts     = 10;
+  repeated ToolCall tool_calls          = 11;
+
+  // What remains
+  repeated string next_steps    = 12;
+  repeated string open_questions = 13;
+
+  // Compressed semantic core — the output of SemanticPruner.compress_context()
+  // This is the distilled reasoning that survives aggressive compression.
+  // Stored as UTF-8 JSON bytes of the compressed message list.
+  bytes semantic_core     = 14;
+
+  // Decision log — the flat list of "Why" decisions as strings
+  // Kept separately for fast lookup without deserializing full Decision objects.
+  repeated string decision_log  = 15;
+
+  // Map of filename to content hash (for artifact integrity verification)
+  map<string, string> modified_artifacts = 16;
+
+  // Telemetry
+  TokenUsage token_usage  = 17;
+  double context_utilization = 18;
+
+  // Monitor alerts
+  repeated Alert alerts   = 19;
+
+  // Arbitrary metadata (model name, framework, user-defined tags)
+  map<string, string> metadata = 20;
+
+  // Framework that created this checkpoint
+  string framework        = 21;   // langchain | openai | anthropic | custom
+
+  // Schema version for forward compatibility
+  string schema_version   = 22;   // semver, e.g. "1.0.0"
+}
+
+// ── Multi-agent handoff ──────────────────────────────────────────────────────
+
+// Lightweight payload for handing state between agents.
+// Strips telemetry and tool call history; keeps decisions and goals.
+message AgentHandoff {
+  string source_session_id      = 1;
+  string target_session_id      = 2;
+  uint64 handoff_at             = 3;
+  repeated string goals         = 4;
+  repeated string constraints   = 5;
+  string context_summary        = 6;
+  repeated Decision decisions   = 7;
+  repeated string next_steps    = 8;
+  repeated string files_touched = 9;
+}
+
+// ── Checkpoint service (optional gRPC) ──────────────────────────────────────
+
+message SaveRequest {
+  Checkpoint checkpoint = 1;
+}
+
+message SaveResponse {
+  bool success          = 1;
+  string session_id     = 2;
+  uint32 checkpoint_seq = 3;
+}
+
+message LoadRequest {
+  string task_id = 1;
+}
+
+message LoadResponse {
+  bool found        = 1;
+  Checkpoint checkpoint = 2;
+}
+
+message ListRequest {
+  string status_filter  = 1;   // empty = all
+  uint32 limit          = 2;
+}
+
+message ListResponse {
+  repeated Checkpoint checkpoints = 1;
+}
+
+service CheckpointService {
+  rpc Save  (SaveRequest)  returns (SaveResponse);
+  rpc Load  (LoadRequest)  returns (LoadResponse);
+  rpc List  (ListRequest)  returns (ListResponse);
+}

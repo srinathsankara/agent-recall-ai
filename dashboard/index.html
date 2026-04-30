@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>agent-recall-ai — Session Dashboard</title>
+<style>
+:root{
+  --bg:#0d0f1a;--surface:#161827;--surface2:#1e2235;--surface3:#252840;
+  --border:#2a2d45;--accent:#6366f1;--accent2:#8b5cf6;
+  --green:#22d3a5;--yellow:#f59e0b;--red:#ef4444;--blue:#3b82f6;
+  --text:#e2e8f0;--muted:#64748b;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono','Fira Code',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:.65rem 1.25rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:.5rem;font-size:.97rem;font-weight:700;color:var(--accent);white-space:nowrap}
+.logo small{font-weight:400;color:var(--muted);font-size:.77rem}
+select.session-pick{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:.33rem .65rem;border-radius:6px;font-size:.8rem;cursor:pointer;outline:none;font-family:var(--font)}
+select.session-pick:focus{border-color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:.45rem;margin-left:auto;flex-wrap:wrap}
+.gh-link{display:flex;align-items:center;gap:.3rem;color:var(--muted);font-size:.78rem;padding:.32rem .65rem;border:1px solid var(--border);border-radius:6px;transition:all .15s;white-space:nowrap}
+.gh-link:hover{color:var(--text);border-color:var(--accent)}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+button{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:.33rem .75rem;border-radius:6px;cursor:pointer;font-size:.8rem;transition:all .15s;font-family:var(--font);white-space:nowrap}
+button:hover{background:var(--surface3);border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent)}
+button.primary:hover{background:var(--accent2)}
+
+/* ── Tabs ────────────────────────────────────────────────────────────── */
+.tab-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;padding:0 1.25rem;position:sticky;top:50px;z-index:99;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{background:transparent;border:none;border-bottom:2px solid transparent;padding:.6rem .85rem;color:var(--muted);border-radius:0;font-size:.8rem;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:.3rem}
+.tab:hover{background:transparent;color:var(--text);border-color:var(--border)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .cnt{background:var(--surface2);color:var(--muted);font-size:.62rem;padding:.05rem .32rem;border-radius:9999px}
+.tab.alert-tab .cnt{background:#3f1111;color:var(--red)}
+
+/* ── Shell layout ────────────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:230px 1fr;flex:1;min-height:0}
+main{overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1.1rem}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+aside{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:.9rem;display:flex;flex-direction:column;gap:.7rem}
+.s-label{font-size:.64rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.sess-id-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .7rem;cursor:pointer;transition:border-color .15s}
+.sess-id-box:hover{border-color:var(--accent)}
+.sess-id-val{font-family:var(--mono);font-size:.76rem;font-weight:600;word-break:break-all;line-height:1.4}
+.sess-id-hint{font-size:.63rem;color:var(--muted);margin-top:.15rem}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.38rem}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.55rem .65rem;cursor:pointer;transition:all .15s}
+.stat-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.stat-v{font-size:1.25rem;font-weight:700;color:var(--accent)}
+.stat-l{font-size:.65rem;color:var(--muted);margin-top:.08rem}
+.badge{display:inline-flex;align-items:center;padding:.12rem .45rem;border-radius:9999px;font-size:.68rem;font-weight:600}
+.b-active{background:#0f3620;color:var(--green)}
+.b-completed{background:#1a1f4a;color:var(--accent)}
+.b-failed{background:#3f1111;color:var(--red)}
+.b-suspended{background:#2a1f10;color:var(--yellow)}
+.goal-chip,.con-chip{background:var(--surface2);border-left:2px solid var(--accent);padding:.38rem .6rem;border-radius:0 5px 5px 0;font-size:.76rem;margin-bottom:.28rem;line-height:1.4}
+.con-chip{border-left-color:var(--yellow)}
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:1rem 1.1rem}
+.card-title{font-size:.95rem;font-weight:700;margin-bottom:.65rem}
+.card-sub{font-size:.76rem;color:var(--muted);margin-top:.1rem}
+
+/* ── Overview stats row ──────────────────────────────────────────────── */
+.ov-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem}
+.ov-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem .9rem;cursor:pointer;transition:all .15s;text-align:center}
+.ov-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.ov-icon{font-size:1.3rem;margin-bottom:.3rem}
+.ov-val{font-size:1.65rem;font-weight:700;color:var(--accent)}
+.ov-lbl{font-size:.68rem;color:var(--muted);margin-top:.15rem}
+
+/* ── Context bar ─────────────────────────────────────────────────────── */
+.ctx-bar{cursor:pointer;border-radius:8px;padding:.5rem .6rem;transition:background .15s;border:1px solid transparent}
+.ctx-bar:hover{background:var(--surface2);border-color:var(--border)}
+.bar-track{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;margin:.45rem 0 .3rem}
+.bar-fill{height:100%;border-radius:5px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.fill-green{background:linear-gradient(90deg,var(--green),#059669)}
+.fill-yellow{background:linear-gradient(90deg,var(--yellow),#d97706)}
+.fill-red{background:linear-gradient(90deg,var(--red),#b91c1c)}
+.bar-meta{display:flex;justify-content:space-between;font-size:.73rem;color:var(--muted)}
+.ctx-expand{display:none;margin-top:.75rem;border-top:1px solid var(--border);padding-top:.75rem}
+.ctx-expand.open{display:block}
+.tok-stack{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:.4rem 0}
+.ts-prompt{background:var(--accent)}
+.ts-comp{background:var(--accent2)}
+.ts-cached{background:var(--green)}
+.tok-legend{display:flex;gap:.7rem;flex-wrap:wrap;font-size:.7rem;color:var(--muted)}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:.25rem}
+.tok-row{display:flex;align-items:center;gap:.6rem;margin:.3rem 0}
+.tok-row-lbl{font-size:.75rem;color:var(--muted);width:110px;flex-shrink:0}
+.tok-row-bar{flex:1;height:7px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.tok-row-fill{height:100%;border-radius:3px;transition:width .6s}
+.tok-row-val{font-size:.73rem;font-family:var(--mono);width:75px;text-align:right;flex-shrink:0;color:var(--text)}
+
+/* ── Decision nodes ──────────────────────────────────────────────────── */
+.d-node{display:flex;align-items:stretch;gap:0}
+.d-connector{display:flex;flex-direction:column;align-items:center;width:30px;flex-shrink:0}
+.d-dot{width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);z-index:1;margin-top:19px;flex-shrink:0}
+.d-dot.anchor{background:var(--green);box-shadow:0 0 7px var(--green)}
+.d-line{width:2px;flex:1;background:var(--border);margin-top:2px}
+.d-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.8rem .95rem;margin-bottom:.6rem;flex:1;cursor:pointer;transition:all .15s}
+.d-card:hover{border-color:var(--accent);background:var(--surface3)}
+.d-card.anchor-card{border-left:3px solid var(--green)}
+.d-card.active{border-color:var(--accent);background:var(--surface3)}
+.d-sum{font-size:.86rem;font-weight:600;margin-bottom:.28rem}
+.d-rea{font-size:.77rem;color:var(--muted);line-height:1.5;margin-bottom:.3rem}
+.d-meta{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.tag{display:inline-block;padding:.08rem .38rem;border-radius:4px;font-size:.64rem;font-weight:600;cursor:pointer;transition:opacity .15s}
+.tag:hover{opacity:.8}
+.t-anchor{background:#0f3620;color:var(--green)}
+.t-rej{background:#3f1111;color:#fca5a5;font-family:var(--mono)}
+.t-lbl{background:var(--surface);color:var(--muted)}
+.t-active{background:rgba(99,102,241,.2);color:var(--accent)}
+.t-ts{font-size:.66rem;color:var(--muted);font-family:var(--mono)}
+
+/* ── Filter bar ──────────────────────────────────────────────────────── */
+.filter-row{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;margin-bottom:.8rem}
+.search-box{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.38rem .65rem;border-radius:6px;font-size:.8rem;outline:none;flex:1;min-width:160px;font-family:var(--font)}
+.search-box:focus{border-color:var(--accent)}
+.chip{background:var(--surface2);border:1px solid var(--border);padding:.28rem .6rem;border-radius:9999px;font-size:.7rem;cursor:pointer;transition:all .15s}
+.chip.on{background:rgba(99,102,241,.18);border-color:var(--accent);color:var(--accent)}
+
+/* ── Timeline ────────────────────────────────────────────────────────── */
+.tl-item{display:flex;gap:.7rem;align-items:flex-start;padding:.55rem .45rem;border-radius:7px;cursor:pointer;transition:background .15s}
+.tl-item:hover{background:var(--surface2)}
+.tl-ico{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;border:1px solid}
+.ico-decision{background:rgba(99,102,241,.15);border-color:var(--accent)}
+.ico-file{background:rgba(59,130,246,.15);border-color:var(--blue)}
+.ico-alert-e{background:rgba(239,68,68,.15);border-color:var(--red)}
+.ico-alert-w{background:rgba(245,158,11,.15);border-color:var(--yellow)}
+.ico-session{background:rgba(34,211,165,.15);border-color:var(--green)}
+.ico-tool{background:rgba(139,92,246,.15);border-color:var(--accent2)}
+.tl-body{flex:1}
+.tl-title{font-size:.82rem;font-weight:600}
+.tl-sub{font-size:.74rem;color:var(--muted);margin-top:.12rem;line-height:1.4}
+.tl-time{font-size:.65rem;color:var(--muted);font-family:var(--mono);margin-top:.18rem;white-space:nowrap}
+
+/* ── Files ───────────────────────────────────────────────────────────── */
+.files-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.6rem}
+.f-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.7rem .8rem;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:.3rem}
+.f-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.f-ext{font-size:1.3rem}
+.f-path{font-family:var(--mono);font-size:.73rem;word-break:break-all;line-height:1.4;color:var(--text)}
+.f-act{font-size:.63rem;padding:.08rem .38rem;border-radius:3px;font-weight:700;align-self:flex-start}
+.fa-mod{background:#1a2f4a;color:#60a5fa}
+.fa-cre{background:#0f3620;color:var(--green)}
+.fa-del{background:#3f1111;color:var(--red)}
+.fa-read{background:#2a1f40;color:#a78bfa}
+.f-desc{font-size:.7rem;color:var(--muted)}
+
+/* ── Tokens & Cost tab ───────────────────────────────────────────────── */
+.cost-hero{text-align:center;padding:1.25rem}
+.cost-big{font-size:2.8rem;font-weight:700;color:var(--accent);line-height:1}
+.cost-sub{font-size:.8rem;color:var(--muted);margin-top:.35rem}
+.cost-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:1rem}
+.cost-cell{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.7rem;text-align:center}
+.cc-val{font-size:1.15rem;font-weight:700}
+.cc-lbl{font-size:.67rem;color:var(--muted);margin-top:.15rem}
+.cache-note{background:rgba(34,211,165,.08);border:1px solid rgba(34,211,165,.3);border-radius:8px;padding:.65rem .9rem;font-size:.78rem;color:var(--green);margin-top:.75rem;display:flex;gap:.5rem;align-items:flex-start}
+
+/* ── Alerts tab ──────────────────────────────────────────────────────── */
+.al-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.8rem .95rem;cursor:pointer;transition:all .15s;display:flex;gap:.7rem;align-items:flex-start;margin-bottom:.5rem}
+.al-card:hover{border-color:var(--accent);background:var(--surface3)}
+.al-sev-critical,.al-sev-error{border-left:3px solid var(--red)}
+.al-sev-warn{border-left:3px solid var(--yellow)}
+.al-sev-info{border-left:3px solid var(--accent)}
+.al-ico{font-size:1.1rem;flex-shrink:0;width:26px;text-align:center;margin-top:.1rem}
+.al-body{flex:1}
+.al-title{font-size:.84rem;font-weight:600}
+.al-msg{font-size:.77rem;color:var(--muted);margin-top:.18rem;line-height:1.4}
+.al-time{font-size:.65rem;color:var(--muted);font-family:var(--mono);margin-top:.28rem}
+.sev-tag{font-size:.63rem;padding:.08rem .38rem;border-radius:3px;font-weight:700;flex-shrink:0;margin-top:.1rem}
+.st-critical,.st-error{background:#3f1111;color:var(--red)}
+.st-warn{background:#3f2000;color:var(--yellow)}
+.st-info{background:#1a1f4a;color:var(--accent)}
+
+/* ── Next steps ──────────────────────────────────────────────────────── */
+.step-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .85rem;display:flex;align-items:center;gap:.7rem;cursor:pointer;transition:all .15s;margin-bottom:.45rem}
+.step-item:hover{border-color:var(--accent);background:var(--surface3)}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.67rem;font-weight:700;color:var(--muted);flex-shrink:0}
+.step-text{flex:1;font-size:.8rem;line-height:1.4}
+.step-todo{font-size:.62rem;background:var(--surface3);color:var(--muted);padding:.08rem .38rem;border-radius:4px;white-space:nowrap}
+.section-row{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+
+/* ── Detail panel ────────────────────────────────────────────────────── */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;backdrop-filter:blur(2px)}
+#panel{position:fixed;right:0;top:0;bottom:0;width:420px;max-width:100vw;background:var(--surface);border-left:1px solid var(--border);z-index:201;transform:translateX(110%);transition:transform .25s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+#panel.open{transform:translateX(0)}
+.p-hdr{padding:1rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:.7rem;position:sticky;top:0;background:var(--surface);z-index:1}
+.p-title{font-size:.92rem;font-weight:700;flex:1;line-height:1.4}
+.p-close{background:transparent;border:none;color:var(--muted);font-size:1.05rem;padding:.22rem;cursor:pointer;line-height:1;border-radius:4px}
+.p-close:hover{color:var(--text);background:var(--surface2)}
+.p-body{padding:1rem 1.1rem;flex:1;display:flex;flex-direction:column;gap:.9rem}
+.p-sec-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.35rem}
+.p-sec-val{font-size:.8rem;line-height:1.6;color:var(--text)}
+.rej-item{background:#3f1111;color:#fca5a5;font-size:.76rem;padding:.28rem .55rem;border-radius:4px;display:flex;align-items:center;gap:.35rem;margin-bottom:.3rem}
+.copy-row{display:flex;gap:.4rem;margin-top:.4rem}
+.copy-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:.22rem .5rem;border-radius:4px;font-size:.68rem;cursor:pointer;transition:all .15s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);background:transparent}
+.pre-block{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.75rem .85rem;font-family:var(--mono);font-size:.73rem;line-height:1.6;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto}
+.related-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.45rem .7rem;font-size:.77rem;margin-bottom:.3rem;cursor:pointer;transition:all .15s}
+.related-item:hover{border-color:var(--accent)}
+.divider{height:1px;background:var(--border)}
+
+/* ── Toast ───────────────────────────────────────────────────────────── */
+#toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(90px);background:var(--surface3);border:1px solid var(--border);color:var(--text);padding:.45rem 1rem;border-radius:8px;font-size:.8rem;z-index:400;transition:transform .3s cubic-bezier(.4,0,.2,1);pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── Empty ───────────────────────────────────────────────────────────── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty .ei{font-size:2.5rem;margin-bottom:.65rem}
+.empty p{font-size:.83rem}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media(max-width:860px){.shell{grid-template-columns:1fr}aside{display:none}.ov-row{grid-template-columns:repeat(2,1fr)}.section-row{grid-template-columns:1fr}}
+@media(max-width:500px){.ov-row{grid-template-columns:1fr 1fr}#panel{width:100vw}.cost-3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">⚡ agent-recall-ai <small>Your agent never starts over again</small></div>
+  <select class="session-pick" id="sess-pick" onchange="switchSession(this.value)" title="Switch demo session">
+    <option value="auth">📂 refactor-auth-v2  (active)</option>
+    <option value="payment">✅ payment-api  (completed)</option>
+    <option value="k8s">❌ k8s-deployment  (failed)</option>
+  </select>
+  <div class="hdr-right">
+    <button onclick="document.getElementById('file-in').click()">📂 Load JSON</button>
+    <button class="primary" onclick="showResumePrompt()">📋 Resume Prompt</button>
+    <a class="gh-link" href="https://github.com/srinathsankara/agent-recall-ai" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      srinathsankara
+    </a>
+  </div>
+  <input type="file" id="file-in" accept=".json" style="display:none" onchange="loadFile(event)"/>
+</header>
+
+<!-- ── Tab bar ────────────────────────────────────────────────────────── -->
+<nav class="tab-bar" id="tab-bar">
+  <button class="tab active" data-tab="overview"  onclick="switchTab('overview')">📊 Overview</button>
+  <button class="tab"        data-tab="decisions" onclick="switchTab('decisions')">🧠 Decisions <span class="cnt" id="cnt-d">0</span></button>
+  <button class="tab"        data-tab="timeline"  onclick="switchTab('timeline')">⏱ Timeline</button>
+  <button class="tab"        data-tab="files"     onclick="switchTab('files')">📁 Files <span class="cnt" id="cnt-f">0</span></button>
+  <button class="tab"        data-tab="tokens"    onclick="switchTab('tokens')">💰 Tokens & Cost</button>
+  <button class="tab"        data-tab="alerts"    id="alerts-tab" onclick="switchTab('alerts')">🔔 Alerts <span class="cnt" id="cnt-a">0</span></button>
+</nav>
+
+<!-- ── Main shell ──────────────────────────────────────────────────────── -->
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="s-label">Session</div>
+    <div class="sess-id-box" onclick="copyText(currentSession.session_id,'Session ID copied!')" title="Click to copy session ID">
+      <div class="sess-id-val" id="sb-id">—</div>
+      <div class="sess-id-hint">🖱 Click to copy ID</div>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <span class="badge" id="sb-badge">—</span>
+      <span style="font-size:.73rem;color:var(--muted)">Checkpoint <span id="sb-seq" style="color:var(--text);font-weight:600">#0</span></span>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card" onclick="switchTab('decisions')" title="View all decisions">
+        <div class="stat-v" id="sb-nd">—</div>
+        <div class="stat-l">🧠 Decisions</div>
+      </div>
+      <div class="stat-card" onclick="switchTab('files')" title="View all files">
+        <div class="stat-v" id="sb-nf">—</div>
+        <div class="stat-l">📁 Files</div>
+      </div>
+      <div class="stat-card" onclick="switchTab('tokens')" title="View tokens & cost">
+        <div class="stat-v" id="sb-cost">—</div>
+        <div class="stat-l">💰 Cost USD</div>
+      </div>
+      <div class="stat-card" onclick="showCtxExpand()" title="View token breakdown">
+        <div class="stat-v" id="sb-ctx">—</div>
+        <div class="stat-l">🎯 Context</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="s-label" style="margin-bottom:.35rem">Goals</div>
+      <div id="sb-goals"></div>
+    </div>
+    <div>
+      <div class="s-label" style="margin-bottom:.35rem">Constraints</div>
+      <div id="sb-cons"></div>
+    </div>
+    <div style="margin-top:auto;padding-top:.5rem;border-top:1px solid var(--border)">
+      <div style="font-size:.67rem;color:#a5b4fc;font-style:italic;margin-bottom:.35rem;line-height:1.4">Your agent never starts over again.</div>
+      <div style="font-size:.65rem;color:var(--muted);line-height:1.6">
+        Built by <a href="https://github.com/srinathsankara" target="_blank" style="color:var(--accent)">@srinathsankara</a><br/>
+        <a href="https://github.com/srinathsankara/agent-recall-ai" target="_blank" style="color:var(--muted)">github.com/srinathsankara/agent-recall-ai</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main id="main"></main>
+</div>
+
+<!-- Detail panel -->
+<div id="overlay" onclick="closePanel()"></div>
+<div id="panel">
+  <div class="p-hdr">
+    <div class="p-title" id="p-title">Detail</div>
+    <button class="p-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="p-body" id="p-body"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// DEMO DATA — 3 distinct sessions
+// ═══════════════════════════════════════════════════════════════════════════
+const SESSIONS = {
+
+auth: {
+  session_id: "refactor-auth-v2",
+  status: "active",
+  checkpoint_seq: 4,
+  schema_version: "1.0.0",
+  goals: [
+    "Replace Flask-Login sessions with JWT authentication",
+    "Maintain 100% backward API compatibility"
+  ],
+  constraints: [
+    "Must not change /login, /logout, /me endpoint signatures",
+    "All 142 existing tests must continue to pass",
+    "Zero downtime deployment required"
+  ],
+  context_summary: "FastAPI app, 3k MAU, PostgreSQL backend. Migrating from Flask-Login + DB sessions to stateless JWT.",
+  decisions: [
+    {
+      id: "a1b2c3d4",
+      summary: "Use PyJWT for JWT generation and validation",
+      reasoning: "10M+ weekly downloads, actively maintained, pure Python — no C extensions needed. Rejected python-jose due to unpatched CVEs (CVE-2022-29217).",
+      alternatives_rejected: ["python-jose (CVEs)", "authlib (too heavy)", "python-jwt (unmaintained)"],
+      timestamp: "2025-01-15T10:30:00",
+      tags: ["architecture", "security", "decided"]
+    },
+    {
+      id: "e5f6a7b8",
+      summary: "Decided: store refresh tokens in Redis with 7-day TTL",
+      reasoning: "O(1) revocation lookup, built-in expiry, no schema migration needed. PostgreSQL token table would add a DB query on every token refresh — unacceptable at our RPS.",
+      alternatives_rejected: ["PostgreSQL token table", "In-memory dict (non-persistent)", "Cookie-only (no server-side revocation)"],
+      timestamp: "2025-01-15T10:45:00",
+      tags: ["architecture", "decided", "redis"]
+    },
+    {
+      id: "c9d0e1f2",
+      summary: "Keep session-based auth for admin panel — JWT migration is API-only",
+      reasoning: "Admin panel is server-side rendered (Jinja2), low traffic. Full migration adds risk with no user benefit. Rejected full migration because admin panel cannot use Bearer tokens.",
+      alternatives_rejected: ["Full JWT migration across all routes"],
+      timestamp: "2025-01-15T11:00:00",
+      tags: ["architecture", "rejected", "scope"]
+    },
+    {
+      id: "g3h4i5j6",
+      summary: "Use HS256 (HMAC-SHA256) not RS256 for token signing",
+      reasoning: "Single-service deployment — no need for asymmetric keys. RS256 adds key rotation complexity for zero gain here. If we ever introduce microservices, migrate then.",
+      alternatives_rejected: ["RS256 (asymmetric — overkill)", "ES256 (elliptic curve — no tooling)"],
+      timestamp: "2025-01-15T11:15:00",
+      tags: ["security"]
+    }
+  ],
+  files_modified: [
+    { path: "auth/session.py",      action: "modified",  description: "Refactored to emit JWT instead of DB session" },
+    { path: "auth/middleware.py",   action: "modified",  description: "Added JWT Bearer header validation" },
+    { path: "auth/tokens.py",       action: "created",   description: "New module: JWT encode/decode helpers" },
+    { path: "auth/models.py",       action: "modified",  description: "Added RefreshToken model for Redis" },
+    { path: "tests/test_auth.py",   action: "modified",  description: "Updated test fixtures for JWT headers" }
+  ],
+  tool_calls: [
+    { tool_name: "read_file",    input_summary: "auth/session.py",     output_summary: "Read 287 lines",  output_tokens: 820,  timestamp: "2025-01-15T10:28:00" },
+    { tool_name: "search_code",  input_summary: "Flask-Login usage",   output_summary: "Found 12 refs",   output_tokens: 340,  timestamp: "2025-01-15T10:35:00" },
+    { tool_name: "write_file",   input_summary: "auth/tokens.py",      output_summary: "Created 95 lines",output_tokens: 420,  timestamp: "2025-01-15T10:55:00" },
+    { tool_name: "run_tests",    input_summary: "pytest tests/test_auth.py", output_summary: "142 passed 0 failed", output_tokens: 1200, timestamp: "2025-01-15T11:20:00" }
+  ],
+  next_steps: [
+    "Implement POST /auth/token/refresh endpoint with TTL sliding window",
+    "Update OpenAPI spec — add BearerAuth security scheme",
+    "Load test JWT validation endpoint at 1,000 RPS",
+    "Document token rotation runbook for on-call team"
+  ],
+  token_usage: { prompt: 48500, completion: 9200, cached: 12000 },
+  cost_usd: 0.0312,
+  context_utilization: 0.45,
+  metadata: { model: "claude-sonnet-4-6", framework: "anthropic", pre_inference_tokens: 48500 },
+  alerts: [
+    { alert_type: "cost_warning", severity: "warn", message: "Session cost $3.12 — 62% of $5.00 budget consumed", timestamp: "2025-01-15T11:10:00", detail: { budget: 5.00, spent: 3.12 } }
+  ]
+},
+
+payment: {
+  session_id: "payment-api-integration",
+  status: "completed",
+  checkpoint_seq: 11,
+  schema_version: "1.0.0",
+  goals: [
+    "Integrate Stripe payment processing for subscription plans",
+    "Add webhook handler for Stripe payment events",
+    "Support USD, EUR, GBP currencies"
+  ],
+  constraints: [
+    "PCI-DSS compliance — card numbers must never touch our servers",
+    "Idempotency keys required on all Stripe API calls",
+    "Webhook signature verification is mandatory"
+  ],
+  context_summary: "SaaS product, adding paid plans. Stripe chosen by CEO. Backend: Django + Celery. No existing payment code.",
+  decisions: [
+    {
+      id: "p1a2b3c4",
+      summary: "Decided: Use Stripe Checkout (hosted page) not custom payment form",
+      reasoning: "Stripe Checkout handles PCI compliance automatically. A custom form requires SAQ-D certification — weeks of work and annual audits. Checkout reduces scope to SAQ-A.",
+      alternatives_rejected: ["Custom card form (PCI-DSS SAQ-D required)", "PayPal (weak API)", "Braintree (Stripe is cleaner)"],
+      timestamp: "2025-02-03T09:15:00",
+      tags: ["architecture", "security", "decided"]
+    },
+    {
+      id: "p2d3e4f5",
+      summary: "Store Stripe customer ID in User model, not session",
+      reasoning: "Customer ID is permanent and needed for subscription management, refunds, and portals. Putting it in a session loses it on logout.",
+      alternatives_rejected: ["Store in session only", "Derive from email each time (expensive API call)"],
+      timestamp: "2025-02-03T09:40:00",
+      tags: ["architecture", "decided"]
+    },
+    {
+      id: "p3g4h5i6",
+      summary: "Architecture: use Celery task for webhook processing, not synchronous handler",
+      reasoning: "Stripe retries webhooks for 3 days. Synchronous processing risks timeouts — Stripe requires response within 30s. Celery decouples receipt from processing.",
+      alternatives_rejected: ["Synchronous processing in view", "Django Q (less monitoring tooling)"],
+      timestamp: "2025-02-03T10:05:00",
+      tags: ["architecture", "decided", "reliability"]
+    },
+    {
+      id: "p4j5k6l7",
+      summary: "Use stripe-mock for all local development and CI testing",
+      reasoning: "Real Stripe test mode has rate limits and is slow. stripe-mock runs locally, no network, deterministic. Avoids flaky CI.",
+      alternatives_rejected: ["Stripe test mode in CI (slow, flaky)", "Manual mocking (brittle)"],
+      timestamp: "2025-02-03T10:30:00",
+      tags: ["testing", "decided"]
+    },
+    {
+      id: "p5m6n7o8",
+      summary: "Decided: use database-level idempotency keys, not Stripe's header alone",
+      reasoning: "Store processed event IDs in a DB table. Duplicate webhook detection becomes reliable even if our Celery worker crashes mid-processing.",
+      alternatives_rejected: ["Stripe idempotency header only (not durable)", "Redis dedup (adds infra)"],
+      timestamp: "2025-02-03T11:00:00",
+      tags: ["reliability", "decided"]
+    },
+    {
+      id: "p6p7q8r9",
+      summary: "Soft-delete subscription records, never hard-delete",
+      reasoning: "Finance and GDPR audit requirements. Deleted subscriptions must be recoverable. Using cancelled_at timestamp field.",
+      alternatives_rejected: ["Hard delete (breaks audit trail)", "Separate audit table (complex)"],
+      timestamp: "2025-02-03T11:30:00",
+      tags: ["compliance", "decided"]
+    },
+    {
+      id: "p7s8t9u0",
+      summary: "Webhook endpoint path must not be guessable — use UUID suffix",
+      reasoning: "Even with signature verification, a public, predictable webhook URL is a DDoS target. UUID suffix provides defence-in-depth.",
+      alternatives_rejected: ["Standard /webhooks/stripe path"],
+      timestamp: "2025-02-03T12:00:00",
+      tags: ["security", "decided"]
+    }
+  ],
+  files_modified: [
+    { path: "payments/models.py",         action: "created", description: "Subscription, Payment, StripeEvent models" },
+    { path: "payments/views.py",          action: "created", description: "Checkout session + webhook views" },
+    { path: "payments/tasks.py",          action: "created", description: "Celery tasks for async webhook processing" },
+    { path: "payments/stripe_client.py",  action: "created", description: "Stripe client wrapper with retry logic" },
+    { path: "users/models.py",            action: "modified", description: "Added stripe_customer_id field" },
+    { path: "settings/base.py",           action: "modified", description: "STRIPE_SECRET_KEY, WEBHOOK_SECRET from env" },
+    { path: "tests/test_payments.py",     action: "created", description: "94 tests using stripe-mock" },
+    { path: "docs/payment-runbook.md",    action: "created", description: "On-call runbook for payment failures" }
+  ],
+  tool_calls: [
+    { tool_name: "search_web",   input_summary: "Stripe Checkout Django integration", output_summary: "Found Stripe docs + 3 examples", output_tokens: 2100, timestamp: "2025-02-03T09:10:00" },
+    { tool_name: "read_file",    input_summary: "users/models.py",  output_summary: "Read 156 lines", output_tokens: 510, timestamp: "2025-02-03T09:35:00" },
+    { tool_name: "write_file",   input_summary: "payments/models.py", output_summary: "Created 213 lines", output_tokens: 890, timestamp: "2025-02-03T10:20:00" },
+    { tool_name: "run_tests",    input_summary: "pytest payments/ -v", output_summary: "94 passed, 0 failed", output_tokens: 3200, timestamp: "2025-02-03T13:45:00" },
+    { tool_name: "stripe_cli",   input_summary: "stripe listen --forward-to localhost", output_summary: "Webhook received + processed", output_tokens: 420, timestamp: "2025-02-03T14:00:00" }
+  ],
+  next_steps: [],
+  token_usage: { prompt: 98200, completion: 18400, cached: 45000 },
+  cost_usd: 0.1247,
+  context_utilization: 0.87,
+  metadata: { model: "claude-opus-4-7", framework: "anthropic", pre_inference_tokens: 98200, cache_savings: [{cache_read_tokens: 45000}] },
+  alerts: [
+    { alert_type: "token_pressure", severity: "warn",  message: "Context at 78% — consider checkpointing now", timestamp: "2025-02-03T11:45:00", detail: { utilization: 0.78 } },
+    { alert_type: "behavioral_drift", severity: "warn", message: "Decision contradicts constraint: PCI-DSS — verify card handling", timestamp: "2025-02-03T10:15:00", detail: { constraint: "PCI-DSS compliance" } }
+  ]
+},
+
+k8s: {
+  session_id: "k8s-prod-deployment",
+  status: "failed",
+  checkpoint_seq: 7,
+  schema_version: "1.0.0",
+  goals: [
+    "Deploy microservices stack to Kubernetes production cluster",
+    "Configure autoscaling and resource limits",
+    "Set up monitoring with Prometheus + Grafana"
+  ],
+  constraints: [
+    "Zero downtime deployment — rolling updates only",
+    "Production namespace must be isolated from staging",
+    "All secrets must be stored in Vault, not k8s Secrets",
+    "Max pod memory: 512Mi per service"
+  ],
+  context_summary: "GKE cluster, 3 node pools. 6 microservices. CI/CD via GitHub Actions. Cluster already running staging workloads.",
+  decisions: [
+    {
+      id: "k1a2b3c4",
+      summary: "Use Helm charts for all service deployments, not raw manifests",
+      reasoning: "Helm enables templating and environment overrides. Raw manifests require duplicating 90% of YAML for prod vs staging. Rejected Kustomize — team knows Helm.",
+      alternatives_rejected: ["Raw kubectl apply manifests", "Kustomize (team unfamiliar)", "Pulumi (too much code)"],
+      timestamp: "2025-03-10T08:30:00",
+      tags: ["architecture", "decided", "tooling"]
+    },
+    {
+      id: "k2d3e4f5",
+      summary: "Decided: separate namespace per environment (staging, production)",
+      reasoning: "RBAC isolation. Billing attribution. Prevents accidental prod changes from staging context. Required by security team.",
+      alternatives_rejected: ["Single namespace with labels", "Separate clusters (too expensive)"],
+      timestamp: "2025-03-10T08:55:00",
+      tags: ["security", "decided"]
+    },
+    {
+      id: "k3g4h5i6",
+      summary: "Set CPU/memory requests at 50% of limits for HPA headroom",
+      reasoning: "HPA scales on CPU utilization. If requests == limits, there is no scale-up headroom until 100%. 50% ratio means HPA triggers at comfortable threshold.",
+      alternatives_rejected: ["Requests == Limits (no HPA headroom)", "No resource limits (noisy neighbor risk)"],
+      timestamp: "2025-03-10T09:20:00",
+      tags: ["performance", "decided"]
+    },
+    {
+      id: "k4j5k6l7",
+      summary: "Architecture: use Vault Agent Injector for secret injection, not env vars",
+      reasoning: "k8s Secrets are base64-encoded, not encrypted at rest by default. Vault provides audit trail, rotation, and fine-grained access policies.",
+      alternatives_rejected: ["k8s Secrets (not encrypted at rest)", "Sealed Secrets (rotation is manual)"],
+      timestamp: "2025-03-10T09:45:00",
+      tags: ["security", "decided"]
+    },
+    {
+      id: "k5m6n7o8",
+      summary: "Use PodDisruptionBudget: minAvailable=2 for all stateless services",
+      reasoning: "Protects against node drain during upgrades. Without PDB, GKE upgrades can kill all pods simultaneously, causing downtime.",
+      alternatives_rejected: ["No PDB (downtime risk during node upgrades)"],
+      timestamp: "2025-03-10T10:10:00",
+      tags: ["reliability", "decided"]
+    }
+  ],
+  files_modified: [
+    { path: "helm/api-gateway/values.yaml",       action: "created",   description: "Gateway service Helm values" },
+    { path: "helm/api-gateway/values.prod.yaml",  action: "created",   description: "Production overrides" },
+    { path: "helm/user-service/values.yaml",      action: "created",   description: "User service chart" },
+    { path: "helm/payment-service/values.yaml",   action: "created",   description: "Payment service chart" },
+    { path: "k8s/namespaces.yaml",                action: "created",   description: "production + staging namespaces" },
+    { path: "k8s/rbac/prod-role.yaml",            action: "created",   description: "Production RBAC policy" },
+    { path: "k8s/hpa/api-gateway-hpa.yaml",       action: "created",   description: "HPA for API gateway, target 60% CPU" },
+    { path: "k8s/pdb/all-services-pdb.yaml",      action: "created",   description: "PodDisruptionBudget for all services" },
+    { path: ".github/workflows/deploy-prod.yml",  action: "modified",  description: "Added Helm upgrade step" },
+    { path: "docs/runbook-deployment.md",         action: "created",   description: "Deployment runbook" },
+    { path: "monitoring/prometheus-values.yaml",  action: "created",   description: "Prometheus Helm values" },
+    { path: "monitoring/grafana-dashboards/",     action: "created",   description: "3 pre-built dashboards" }
+  ],
+  tool_calls: [
+    { tool_name: "kubectl",     input_summary: "get nodes -o wide",               output_summary: "3 nodes, all Ready",       output_tokens: 280,  timestamp: "2025-03-10T08:25:00" },
+    { tool_name: "helm",        input_summary: "helm lint api-gateway/",          output_summary: "0 errors, 2 warnings",     output_tokens: 180,  timestamp: "2025-03-10T09:50:00" },
+    { tool_name: "kubectl",     input_summary: "apply -f k8s/namespaces.yaml",    output_summary: "namespace created",        output_tokens: 95,   timestamp: "2025-03-10T10:00:00" },
+    { tool_name: "helm",        input_summary: "upgrade --install api-gateway",   output_summary: "Error: OOMKilled on 3 pods", output_tokens: 820, timestamp: "2025-03-10T10:45:00" },
+    { tool_name: "kubectl",     input_summary: "describe pod api-gateway-xxx",    output_summary: "OOMKilled: memory limit 512Mi exceeded", output_tokens: 1400, timestamp: "2025-03-10T10:47:00" }
+  ],
+  next_steps: [
+    "Investigate OOMKilled — api-gateway pods exceeding 512Mi memory limit",
+    "Profile memory usage of api-gateway service under production load",
+    "Raise memory limit to 768Mi or fix memory leak (profiling first)",
+    "Re-run helm upgrade after memory investigation resolves",
+    "Set up Grafana dashboards for memory monitoring going forward"
+  ],
+  token_usage: { prompt: 127000, completion: 24800, cached: 0 },
+  cost_usd: 0.2891,
+  context_utilization: 1.0,
+  metadata: { model: "claude-opus-4-7", framework: "anthropic" },
+  alerts: [
+    { alert_type: "token_critical",   severity: "critical", message: "Context window at 100% — session terminated by token limit", timestamp: "2025-03-10T10:52:00", detail: { utilization: 1.0, model_limit: 200000 } },
+    { alert_type: "cost_exceeded",    severity: "error",    message: "Session cost $28.91 exceeded $25.00 budget limit — emergency save triggered", timestamp: "2025-03-10T10:50:00", detail: { budget: 25.00, spent: 28.91 } },
+    { alert_type: "behavioral_drift", severity: "warn",     message: "Tool output 'OOMKilled' contradicts constraint: Max pod memory 512Mi", timestamp: "2025-03-10T10:47:00", detail: { constraint: "Max pod memory: 512Mi per service" } }
+  ]
+}
+
+}; // end SESSIONS
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let currentSession = SESSIONS.auth;
+let currentTab = 'overview';
+let activeDecisionFilter = null;  // tag filter
+let decisionSearch = '';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════════════════════════
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function fmt(n){ return Number(n).toLocaleString() }
+
+function isAnchor(text){
+  const kws=['decided','decision','rejected','architecture','because','must not','never','constraint','chosen','alternative','trade-off','tradeoff','rationale','therefore','agreed','principle','rule','avoid','chosen','critical'];
+  const low=(text||'').toLowerCase();
+  return kws.some(k=>low.includes(k));
+}
+
+function fileExt(path){
+  const m=path.match(/\.(\w+)$/);
+  const icons={py:'🐍',js:'📜',ts:'📘',yaml:'⚙️',yml:'⚙️',json:'📋',md:'📝',html:'🌐',css:'🎨',go:'🔵',java:'☕',sh:'⚡',sql:'🗄️',proto:'📡',toml:'🔧',env:'🔒',txt:'📄'};
+  return icons[m?m[1].toLowerCase():''] || '📄';
+}
+
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function copyText(text,msg){
+  navigator.clipboard.writeText(text).then(()=>showToast(msg||'Copied!')).catch(()=>showToast('Copy failed'));
+}
+
+function formatTime(ts){
+  if(!ts) return '';
+  try{ return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+  catch{ return ts; }
+}
+function formatDateTime(ts){
+  if(!ts) return '';
+  try{ return new Date(ts).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  catch{ return ts; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SESSION SWITCH
+// ═══════════════════════════════════════════════════════════════════════════
+function switchSession(key){
+  currentSession = SESSIONS[key] || SESSIONS.auth;
+  activeDecisionFilter = null;
+  decisionSearch = '';
+  closePanel();
+  renderAll();
+  showToast('Loaded: ' + currentSession.session_id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  renderMain();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════════════════
+function renderAll(){
+  renderSidebar();
+  updateTabCounts();
+  renderMain();
+}
+
+function updateTabCounts(){
+  const d = currentSession;
+  document.getElementById('cnt-d').textContent = (d.decisions||[]).length;
+  document.getElementById('cnt-f').textContent = (d.files_modified||[]).length;
+  const ac = (d.alerts||[]).length;
+  document.getElementById('cnt-a').textContent = ac;
+  const atab = document.getElementById('alerts-tab');
+  atab.classList.toggle('alert-tab', ac > 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════════
+function renderSidebar(){
+  const d = currentSession;
+  document.getElementById('sb-id').textContent = d.session_id;
+  document.getElementById('sb-seq').textContent = '#' + (d.checkpoint_seq||0);
+
+  const badge = document.getElementById('sb-badge');
+  badge.textContent = d.status;
+  badge.className = 'badge b-' + (d.status||'active');
+
+  const tu = d.token_usage||{};
+  const cost = d.cost_usd||0;
+  const ctx = Math.round((d.context_utilization||0)*100);
+
+  document.getElementById('sb-nd').textContent   = (d.decisions||[]).length;
+  document.getElementById('sb-nf').textContent   = (d.files_modified||[]).length;
+  document.getElementById('sb-cost').textContent = '$' + cost.toFixed(4);
+  document.getElementById('sb-ctx').textContent  = ctx + '%';
+
+  document.getElementById('sb-goals').innerHTML = (d.goals||[])
+    .map(g=>`<div class="goal-chip">${esc(g)}</div>`).join('') || '<div style="font-size:.75rem;color:var(--muted)">None set</div>';
+
+  document.getElementById('sb-cons').innerHTML = (d.constraints||[])
+    .map(c=>`<div class="con-chip">${esc(c)}</div>`).join('') || '<div style="font-size:.75rem;color:var(--muted)">None set</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN RENDERER — routes to tab
+// ═══════════════════════════════════════════════════════════════════════════
+function renderMain(){
+  const m = document.getElementById('main');
+  switch(currentTab){
+    case 'overview':   m.innerHTML = renderOverview();   break;
+    case 'decisions':  m.innerHTML = renderDecisions();  break;
+    case 'timeline':   m.innerHTML = renderTimeline();   break;
+    case 'files':      m.innerHTML = renderFiles();      break;
+    case 'tokens':     m.innerHTML = renderTokens();     break;
+    case 'alerts':     m.innerHTML = renderAlerts();     break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB: OVERVIEW
+// ═══════════════════════════════════════════════════════════════════════════
+function renderOverview(){
+  const d = currentSession;
+  const tu = d.token_usage||{};
+  const total = (tu.prompt||0)+(tu.completion||0);
+  const cached = tu.cached||0;
+  const ctx = Math.round((d.context_utilization||0)*100);
+  const fillClass = ctx<70?'fill-green':ctx<90?'fill-yellow':'fill-red';
+  const anchors = (d.decisions||[]).filter(dec=>isAnchor(dec.summary)||isAnchor(dec.reasoning||''));
+
+  // Recent decisions (last 3)
+  const recent = (d.decisions||[]).slice(-3);
+
+  return `
+    <!-- Hero value strip -->
+    <div style="background:linear-gradient(90deg,#1a1d35 0%,#1e1b3a 100%);border:1px solid #2e2b55;border-radius:11px;padding:.75rem 1.1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <span style="font-size:1.3rem">⚡</span>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:.92rem;font-weight:700;color:#a5b4fc;letter-spacing:.01em">Every decision saved. Every session recoverable.</div>
+        <div style="font-size:.74rem;color:#64748b;margin-top:.2rem">Decisions, reasoning, files, cost, and constraints auto-saved on every checkpoint — paste the resume prompt into any new session to pick up exactly where you left off.</div>
+      </div>
+      <button class="primary" style="flex-shrink:0" onclick="showResumePrompt()">📋 Get Resume Prompt</button>
+    </div>
+
+    <!-- Stats row -->
+    <div class="ov-row">
+      <div class="ov-card" onclick="switchTab('decisions')" title="View all decisions">
+        <div class="ov-icon">🧠</div>
+        <div class="ov-val">${(d.decisions||[]).length}</div>
+        <div class="ov-lbl">Decisions made</div>
+      </div>
+      <div class="ov-card" onclick="switchTab('files')" title="View all files">
+        <div class="ov-icon">📁</div>
+        <div class="ov-val">${(d.files_modified||[]).length}</div>
+        <div class="ov-lbl">Files touched</div>
+      </div>
+      <div class="ov-card" onclick="switchTab('tokens')" title="View token & cost breakdown">
+        <div class="ov-icon">💰</div>
+        <div class="ov-val">$${(d.cost_usd||0).toFixed(4)}</div>
+        <div class="ov-lbl">Total cost USD</div>
+      </div>
+      <div class="ov-card" onclick="showCtxExpand()" title="Click to see token breakdown">
+        <div class="ov-icon">⚓</div>
+        <div class="ov-val">${anchors.length}</div>
+        <div class="ov-lbl">Decision Anchors</div>
+      </div>
+    </div>
+
+    <!-- Context pressure bar -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">
+        <span style="font-size:.85rem;font-weight:600">Context Window Pressure</span>
+        <span style="font-size:.72rem;color:var(--muted)">Click bar to see token breakdown →</span>
+      </div>
+      <div class="ctx-bar" onclick="toggleCtxExpand()" id="ctx-bar-btn">
+        <div class="bar-track"><div class="bar-fill ${fillClass}" id="ctx-bar-fill" style="width:${ctx}%"></div></div>
+        <div class="bar-meta">
+          <span id="ctx-tok-label">${fmt(total)} tokens used · ${fmt(cached)} cached · ${ctx}% of context</span>
+          <span style="color:${ctx>=90?'var(--red)':ctx>=70?'var(--yellow)':'var(--green)'};font-weight:600">$${(d.cost_usd||0).toFixed(4)} spent</span>
+        </div>
+        <div class="ctx-expand" id="ctx-expand-area">
+          <div class="tok-stack">
+            <div class="ts-prompt" style="width:${total>0?Math.round((tu.prompt||0)/total*100):0}%"></div>
+            <div class="ts-comp"   style="width:${total>0?Math.round((tu.completion||0)/total*100):0}%"></div>
+            <div class="ts-cached" style="width:${total>0?Math.round(cached/total*100):0}%"></div>
+          </div>
+          <div class="tok-legend">
+            <span><span class="tl-dot" style="background:var(--accent)"></span>Prompt: ${fmt(tu.prompt||0)}</span>
+            <span><span class="tl-dot" style="background:var(--accent2)"></span>Completion: ${fmt(tu.completion||0)}</span>
+            <span><span class="tl-dot" style="background:var(--green)"></span>Cached: ${fmt(cached)} ${cached>0?'(💚 savings!)':''}</span>
+          </div>
+          ${cached>0?`<div style="margin-top:.5rem;font-size:.73rem;color:var(--green)">💡 Prompt caching saved ~$${((cached/1000000)*3.00*0.9).toFixed(4)} vs uncached</div>`:''}
+        </div>
+      </div>
+    </div>
+
+    <!-- Goals + Constraints side by side -->
+    <div class="section-row">
+      <div class="card">
+        <div class="card-title">🎯 Goals</div>
+        ${(d.goals||[]).map(g=>`<div class="goal-chip">${esc(g)}</div>`).join('')||'<div style="color:var(--muted);font-size:.8rem">No goals set</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title">🔒 Constraints <span style="font-size:.72rem;font-weight:400;color:var(--muted)">(always enforced)</span></div>
+        ${(d.constraints||[]).map(c=>`<div class="con-chip">${esc(c)}</div>`).join('')||'<div style="color:var(--muted);font-size:.8rem">No constraints</div>'}
+      </div>
+    </div>
+
+    <!-- Recent decisions preview -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <span class="card-title">🧠 Recent Decisions</span>
+        <button onclick="switchTab('decisions')" style="font-size:.72rem">View all ${(d.decisions||[]).length} →</button>
+      </div>
+      ${recent.length===0?'<div class="empty"><div class="ei">🌱</div><p>No decisions recorded yet</p></div>':
+        recent.map((dec,i)=>renderDecisionCard(dec,i,recent.length,true)).join('')}
+    </div>
+
+    <!-- Next steps — clearly labeled task list -->
+    ${renderNextStepsCard(d)}
+
+    <!-- Context summary -->
+    ${d.context_summary?`
+    <div class="card">
+      <div class="card-title">📝 Session Context</div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-top:.1rem">${esc(d.context_summary)}</div>
+    </div>`:''}
+  `;
+}
+
+function renderNextStepsCard(d){
+  const steps = d.next_steps||[];
+  if(d.status==='completed'){
+    return `<div class="card"><div class="card-title">✅ What to Do Next</div><div style="background:rgba(34,211,165,.08);border:1px solid rgba(34,211,165,.3);border-radius:7px;padding:.75rem 1rem;font-size:.82rem;color:var(--green);margin-top:.3rem">🎉 Session completed — all next steps resolved!</div></div>`;
+  }
+  if(steps.length===0) return '';
+  return `
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem">
+        <div>
+          <div class="card-title">📋 What to Do Next</div>
+          <div style="font-size:.73rem;color:var(--muted);margin-top:.1rem">Click any step to see related decisions</div>
+        </div>
+        <span style="font-size:.72rem;color:var(--muted)">${steps.length} pending</span>
+      </div>
+      ${steps.map((s,i)=>`
+        <div class="step-item" onclick="openNextStepPanel(${i})" title="Click to see what this means">
+          <div class="step-num">${i+1}</div>
+          <div class="step-text">${esc(s)}</div>
+          <span class="step-todo">TODO</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB: DECISIONS
+// ═══════════════════════════════════════════════════════════════════════════
+function renderDecisions(){
+  const d = currentSession;
+  const allTags = [...new Set((d.decisions||[]).flatMap(dec=>dec.tags||[]))];
+
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+      <div>
+        <div style="font-size:1rem;font-weight:700">🧠 Decision Tree</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.1rem">Click any decision to explore details · ⚓ anchors are never pruned from context</div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-row">
+      <input class="search-box" id="d-search" placeholder="🔍 Search decisions..." oninput="decisionSearch=this.value;renderMain()" value="${esc(decisionSearch)}"/>
+      <button class="chip ${!activeDecisionFilter&&decisionSearch===''?'on':''}" onclick="activeDecisionFilter=null;decisionSearch='';document.getElementById('d-search').value='';renderMain()">All</button>
+      <button class="chip ${activeDecisionFilter==='anchor'?'on':''}" onclick="activeDecisionFilter='anchor';renderMain()">⚓ Anchors only</button>
+      ${allTags.map(t=>`<button class="chip ${activeDecisionFilter===t?'on':''}" onclick="activeDecisionFilter='${t}';renderMain()">${esc(t)}</button>`).join('')}
+    </div>
+
+    <!-- Decision nodes -->
+    <div id="d-tree">
+      ${renderFilteredDecisions(d)}
+    </div>
+  `;
+}
+
+function renderFilteredDecisions(d){
+  let decisions = d.decisions||[];
+
+  if(activeDecisionFilter==='anchor'){
+    decisions = decisions.filter(dec=>isAnchor(dec.summary)||isAnchor(dec.reasoning||'')||(dec.tags||[]).some(t=>['decided','rejected','architecture'].includes(t)));
+  } else if(activeDecisionFilter){
+    decisions = decisions.filter(dec=>(dec.tags||[]).includes(activeDecisionFilter));
+  }
+
+  if(decisionSearch){
+    const q=decisionSearch.toLowerCase();
+    decisions = decisions.filter(dec=>
+      dec.summary.toLowerCase().includes(q)||
+      (dec.reasoning||'').toLowerCase().includes(q)||
+      (dec.alternatives_rejected||[]).some(r=>r.toLowerCase().includes(q))
+    );
+  }
+
+  if(decisions.length===0) return '<div class="empty"><div class="ei">🔍</div><p>No decisions match the current filter</p></div>';
+
+  return decisions.map((dec,i)=>renderDecisionCard(dec,i,decisions.length,false)).join('');
+}
+
+function renderDecisionCard(dec, i, total, compact){
+  const anchor = isAnchor(dec.summary)||isAnchor(dec.reasoning||'')||(dec.tags||[]).some(t=>['decided','rejected','architecture'].includes(t));
+  const ts = formatTime(dec.timestamp);
+  const rej = dec.alternatives_rejected||[];
+  const isLast = i===total-1;
+  const reasoning = compact ? (dec.reasoning||'').slice(0,120)+(dec.reasoning&&dec.reasoning.length>120?'…':'') : (dec.reasoning||'');
+
+  return `
+    <div class="d-node">
+      <div class="d-connector">
+        <div class="d-dot${anchor?' anchor':''}"></div>
+        ${isLast?'':'<div class="d-line"></div>'}
+      </div>
+      <div class="d-card${anchor?' anchor-card':''}" onclick="openDecisionPanel('${dec.id}')" title="Click for full details">
+        <div class="d-sum">${esc(dec.summary)}</div>
+        ${reasoning?`<div class="d-rea">${esc(reasoning)}</div>`:''}
+        <div class="d-meta">
+          ${anchor?'<span class="tag t-anchor">⚓ Decision Anchor</span>':''}
+          ${rej.slice(0,2).map(r=>`<span class="tag t-rej">✗ ${esc(r)}</span>`).join('')}
+          ${rej.length>2?`<span class="tag t-lbl">+${rej.length-2} more</span>`:''}
+          ${(dec.tags||[]).map(t=>`<span class="tag t-lbl">${esc(t)}</span>`).join('')}
+          ${ts?`<span class="t-ts">${ts}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB: TIMELINE
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTimeline(){
+  const d = currentSession;
+  const events = buildTimeline(d);
+  return `
+    <div>
+      <div style="font-size:1rem;font-weight:700">⏱ Event Timeline</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.1rem;margin-bottom:.85rem">All session events in chronological order · Click any event for details</div>
+    </div>
+    <div class="card" style="padding:.5rem .6rem">
+      ${events.length===0?'<div class="empty"><div class="ei">📭</div><p>No events recorded</p></div>':
+        events.map(ev=>renderTimelineItem(ev)).join('<div style="height:1px;background:var(--border);margin:0 .4rem"></div>')}
+    </div>
+  `;
+}
+
+function buildTimeline(d){
+  const events = [];
+  // Session start
+  events.push({ type:'session', title:'Session started', sub: d.session_id, ts: d.decisions&&d.decisions[0]? new Date(d.decisions[0].timestamp).getTime()-60000 : Date.now(), icon:'🚀', extra: d });
+  // Decisions
+  (d.decisions||[]).forEach(dec=>{ events.push({type:'decision',title:dec.summary,sub:'Decision'+(isAnchor(dec.summary)||isAnchor(dec.reasoning||'')?'  ⚓ Anchor':''),ts:new Date(dec.timestamp).getTime(),icon:'🧠',extra:dec}); });
+  // Files
+  (d.files_modified||[]).forEach(f=>{ events.push({type:'file',title:f.path,sub:f.action+(f.description?' — '+f.description:''),ts: new Date( (d.decisions||[{timestamp:new Date().toISOString()}]).slice(-1)[0].timestamp ).getTime()+(Math.random()*3600000),icon:fileExt(f.path),extra:f}); });
+  // Tool calls
+  (d.tool_calls||[]).forEach(tc=>{ events.push({type:'tool',title:tc.tool_name,sub:tc.input_summary+(tc.output_summary?' → '+tc.output_summary:''),ts:new Date(tc.timestamp).getTime(),icon:'🔧',extra:tc}); });
+  // Alerts
+  (d.alerts||[]).forEach(a=>{ events.push({type:'alert',title:a.alert_type.replace(/_/g,' '),sub:a.message,ts:new Date(a.timestamp).getTime(),icon:a.severity==='critical'||a.severity==='error'?'🚨':'⚠️',sev:a.severity,extra:a}); });
+  // Session end
+  events.push({ type:'session', title:`Session ${d.status}`, sub: `Checkpoint #${d.checkpoint_seq} · $${(d.cost_usd||0).toFixed(4)} total`, ts: Date.now(), icon: d.status==='completed'?'✅':d.status==='failed'?'❌':'⏸', extra:d });
+
+  events.sort((a,b)=>a.ts-b.ts);
+  return events;
+}
+
+function renderTimelineItem(ev){
+  const icoClass = ev.type==='decision'?'ico-decision':ev.type==='file'?'ico-file':ev.type==='alert'?(ev.sev==='warn'||ev.sev==='info'?'ico-alert-w':'ico-alert-e'):ev.type==='tool'?'ico-tool':'ico-session';
+  const clickFn = ev.type==='decision'?`openDecisionPanel('${ev.extra.id}')`:ev.type==='file'?`openFilePanel('${esc(ev.extra.path)}')`:ev.type==='alert'?`openAlertPanel(${JSON.stringify(ev.extra).replace(/"/g,"'")})`:ev.type==='tool'?`openToolPanel(${JSON.stringify(ev.extra).replace(/"/g,"'")})`: `showToast('Session event: ${esc(ev.title)}')`;
+
+  return `
+    <div class="tl-item" onclick="${clickFn}" title="Click for details">
+      <div class="tl-ico ${icoClass}">${ev.icon}</div>
+      <div class="tl-body">
+        <div class="tl-title">${esc(ev.title)}</div>
+        ${ev.sub?`<div class="tl-sub">${esc(ev.sub.slice(0,120))}</div>`:''}
+        <div class="tl-time">${formatDateTime(new Date(ev.ts).toISOString())}</div>
+      </div>
+      <div style="font-size:.7rem;color:var(--muted);text-transform:capitalize;margin-top:.15rem;padding:.1rem .38rem;background:var(--surface2);border-radius:4px;align-self:flex-start;white-space:nowrap">${ev.type}</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB: FILES
+// ═══════════════════════════════════════════════════════════════════════════
+function renderFiles(){
+  const d = currentSession;
+  const files = d.files_modified||[];
+  const byAction = {created:0,modified:0,deleted:0,read:0};
+  files.forEach(f=>{ byAction[f.action]=(byAction[f.action]||0)+1; });
+
+  return `
+    <div>
+      <div style="font-size:1rem;font-weight:700">📁 Files Touched</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.1rem;margin-bottom:.85rem">Click any file to see which decisions affected it</div>
+    </div>
+
+    <!-- Summary row -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.85rem">
+      ${Object.entries(byAction).filter(([,v])=>v>0).map(([k,v])=>`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:.45rem .7rem;font-size:.78rem;display:flex;gap:.4rem;align-items:center">
+          <span class="f-act fa-${k==='created'?'cre':k==='deleted'?'del':k==='read'?'read':'mod'}">${k}</span>
+          <span style="font-weight:600">${v}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="files-grid">
+      ${files.length===0?'<div class="empty"><div class="ei">📭</div><p>No files recorded</p></div>':
+        files.map(f=>`
+          <div class="f-card" onclick="openFilePanel('${esc(f.path)}')" title="Click to see related decisions">
+            <div class="f-ext">${fileExt(f.path)}</div>
+            <div class="f-path">${esc(f.path)}</div>
+            <span class="f-act fa-${f.action==='created'?'cre':f.action==='deleted'?'del':f.action==='read'?'read':'mod'}">${f.action||'modified'}</span>
+            ${f.description?`<div class="f-desc">${esc(f.description)}</div>`:''}
+          </div>`).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB: TOKENS & COST
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTokens(){
+  const d = currentSession;
+  const tu = d.token_usage||{};
+  const total = (tu.prompt||0)+(tu.completion||0);
+  const cached = tu.cached||0;
+  const ctx = Math.round((d.context_utilization||0)*100);
+  const fillClass = ctx<70?'fill-green':ctx<90?'fill-yellow':'fill-red';
+  const model = (d.metadata||{}).model||'unknown';
+  const costs = {
+    'claude-opus-4-7':   {i:15.00,o:75.00,c:1.50},
+    'claude-sonnet-4-6': {i:3.00, o:15.00,c:0.30},
+    'claude-haiku-4-5':  {i:0.80, o:4.00, c:0.08},
+    'gpt-4o':            {i:5.00, o:15.00,c:2.50},
+    'gpt-4o-mini':       {i:0.15, o:0.60, c:0.075}
+  };
+  const mc = costs[model]||{i:3.00,o:15.00,c:0.30};
+  const promptCost  = ((tu.prompt||0)-cached)/1000000*mc.i;
+  const cacheCost   = cached/1000000*mc.c;
+  const outputCost  = (tu.completion||0)/1000000*mc.o;
+  const savedVsNoCaching = cached/1000000*(mc.i-mc.c);
+
+  return `
+    <!-- Cost hero -->
+    <div class="card" style="text-align:center;padding:1.5rem">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Total session cost</div>
+      <div style="font-size:2.8rem;font-weight:700;color:var(--accent);line-height:1">$${(d.cost_usd||0).toFixed(4)}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:.4rem">Model: <span style="color:var(--text)">${esc(model)}</span></div>
+      ${cached>0?`<div style="font-size:.78rem;color:var(--green);margin-top:.3rem">💚 Saved ~$${savedVsNoCaching.toFixed(4)} via prompt caching</div>`:''}
+    </div>
+
+    <!-- Cost breakdown -->
+    <div class="card">
+      <div class="card-title">💸 Cost Breakdown</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.65rem">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.7rem;text-align:center">
+          <div style="font-size:1.15rem;font-weight:700;color:var(--accent)">$${promptCost.toFixed(4)}</div>
+          <div style="font-size:.67rem;color:var(--muted);margin-top:.15rem">Prompt tokens</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.7rem;text-align:center">
+          <div style="font-size:1.15rem;font-weight:700;color:var(--accent2)">$${outputCost.toFixed(4)}</div>
+          <div style="font-size:.67rem;color:var(--muted);margin-top:.15rem">Output tokens</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.7rem;text-align:center">
+          <div style="font-size:1.15rem;font-weight:700;color:var(--green)">$${cacheCost.toFixed(4)}</div>
+          <div style="font-size:.67rem;color:var(--muted);margin-top:.15rem">Cached (cheaper)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token breakdown chart -->
+    <div class="card">
+      <div class="card-title">🔢 Token Usage</div>
+      <div style="margin-top:.8rem">
+        <div class="tok-row">
+          <div class="tok-row-lbl">Prompt tokens</div>
+          <div class="tok-row-bar"><div class="tok-row-fill ts-prompt" style="width:${total>0?Math.round((tu.prompt||0)/total*100):0}%"></div></div>
+          <div class="tok-row-val">${fmt(tu.prompt||0)}</div>
+        </div>
+        <div class="tok-row">
+          <div class="tok-row-lbl">Completion</div>
+          <div class="tok-row-bar"><div class="tok-row-fill ts-comp" style="width:${total>0?Math.round((tu.completion||0)/total*100):0}%"></div></div>
+          <div class="tok-row-val">${fmt(tu.completion||0)}</div>
+        </div>
+        <div class="tok-row">
+          <div class="tok-row-lbl">Cached (free)</div>
+          <div class="tok-row-bar"><div class="tok-row-fill ts-cached" style="width:${total>0?Math.round(cached/total*100):0}%"></div></div>
+          <div class="tok-row-val">${fmt(cached)}</div>
+        </div>
+      </div>
+      <div style="margin-top:.85rem;padding-top:.65rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:.75rem">
+        <span style="color:var(--muted)">Total tokens used:</span>
+        <span style="font-weight:600;font-family:var(--mono)">${fmt(total)}</span>
+      </div>
+    </div>
+
+    <!-- Context window -->
+    <div class="card">
+      <div class="card-title">📏 Context Window Utilization</div>
+      <div style="margin-top:.65rem">
+        <div class="bar-track" style="height:14px"><div class="bar-fill ${fillClass}" style="width:${ctx}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:.3rem">
+          <span>${ctx}% used</span>
+          <span style="color:${ctx>=90?'var(--red)':ctx>=70?'var(--yellow)':'var(--green)'}">${ctx<70?'✅ Healthy':ctx<90?'⚠️ Getting full':'🚨 Critical — checkpoint now!'}</span>
+        </div>
+      </div>
+      ${cached>0?`
+      <div style="margin-top:.9rem;background:rgba(34,211,165,.08);border:1px solid rgba(34,211,165,.3);border-radius:7px;padding:.6rem .8rem;font-size:.77rem;color:var(--green)">
+        💚 <strong>Prompt caching active</strong> — ${fmt(cached)} tokens served from cache. This session benefits from automatic cache_control breakpoints injected by AnthropicAdapter.
+      </div>`:''}
+    </div>
+
+    <!-- Cost projection -->
+    <div class="card">
+      <div class="card-title">📈 Cost Projection</div>
+      <div style="margin-top:.65rem;display:flex;flex-direction:column;gap:.5rem">
+        <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.5rem .7rem;background:var(--surface2);border-radius:6px">
+          <span style="color:var(--muted)">Current cost</span>
+          <span style="font-weight:600">$${(d.cost_usd||0).toFixed(4)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.5rem .7rem;background:var(--surface2);border-radius:6px">
+          <span style="color:var(--muted)">Projected at 100% context</span>
+          <span style="font-weight:600;color:var(--yellow)">$${ctx>0?((d.cost_usd||0)/ctx*100).toFixed(4):'—'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.5rem .7rem;background:var(--surface2);border-radius:6px">
+          <span style="color:var(--muted)">Cost per decision</span>
+          <span style="font-weight:600">$${(d.decisions||[]).length>0?((d.cost_usd||0)/(d.decisions||[]).length).toFixed(4):'—'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB: ALERTS
+// ═══════════════════════════════════════════════════════════════════════════
+function renderAlerts(){
+  const d = currentSession;
+  const alerts = d.alerts||[];
+  const sevOrder = {critical:0,error:1,warn:2,info:3};
+  const sorted = [...alerts].sort((a,b)=>(sevOrder[a.severity]||9)-(sevOrder[b.severity]||9));
+
+  return `
+    <div>
+      <div style="font-size:1rem;font-weight:700">🔔 Alerts & Warnings</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:.1rem;margin-bottom:.85rem">Real-time alerts raised by monitors · Click any alert for detail</div>
+    </div>
+    ${sorted.length===0?'<div class="empty"><div class="ei">✅</div><p>No alerts raised this session — all monitors green!</p></div>':
+      sorted.map(a=>renderAlertCard(a)).join('')}
+  `;
+}
+
+function renderAlertCard(a){
+  const icons = {critical:'🚨',error:'❌',warn:'⚠️',info:'ℹ️'};
+  const label = (a.alert_type||'').replace(/_/g,' ');
+  return `
+    <div class="al-card al-sev-${a.severity}" onclick="openAlertPanel(${htmlAttr(a)})" title="Click for full detail">
+      <div class="al-ico">${icons[a.severity]||'🔔'}</div>
+      <div class="al-body">
+        <div class="al-title">${esc(label.charAt(0).toUpperCase()+label.slice(1))}</div>
+        <div class="al-msg">${esc(a.message)}</div>
+        <div class="al-time">${formatDateTime(a.timestamp)}</div>
+      </div>
+      <span class="sev-tag st-${a.severity}">${a.severity.toUpperCase()}</span>
+    </div>`;
+}
+
+function htmlAttr(obj){ return "'"+JSON.stringify(obj).replace(/'/g,"\\'")+"'"; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTEXT BAR EXPAND
+// ═══════════════════════════════════════════════════════════════════════════
+function toggleCtxExpand(){
+  const el = document.getElementById('ctx-expand-area');
+  if(el) el.classList.toggle('open');
+}
+function showCtxExpand(){
+  switchTab('tokens');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════════════════════════════════════════
+function openPanel(title, bodyHtml){
+  document.getElementById('p-title').innerHTML = title;
+  document.getElementById('p-body').innerHTML = bodyHtml;
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').style.display = 'none';
+}
+
+// Decision detail
+function openDecisionPanel(id){
+  const dec = (currentSession.decisions||[]).find(d=>d.id===id);
+  if(!dec) return;
+  const anchor = isAnchor(dec.summary)||isAnchor(dec.reasoning||'')||(dec.tags||[]).some(t=>['decided','rejected','architecture'].includes(t));
+  const rej = dec.alternatives_rejected||[];
+
+  const relatedFiles = (currentSession.files_modified||[]).filter(f=>{
+    const keywords = dec.summary.split(' ').filter(w=>w.length>4);
+    return keywords.some(k=>f.path.toLowerCase().includes(k.toLowerCase())||((f.description||'').toLowerCase().includes(k.toLowerCase())));
+  });
+
+  openPanel(
+    `${anchor?'⚓ ':'🧠 '}${esc(dec.summary.slice(0,60))}${dec.summary.length>60?'…':''}`,
+    `
+    ${anchor?`<div style="background:rgba(34,211,165,.08);border:1px solid rgba(34,211,165,.3);border-radius:7px;padding:.55rem .75rem;font-size:.76rem;color:var(--green);margin-bottom:.9rem">⚓ Decision Anchor — this decision is <strong>never pruned</strong> from context, regardless of token pressure.</div>`:''}
+
+    <div class="p-sec-lbl">Full Decision</div>
+    <div class="p-sec-val" style="font-weight:600;margin-bottom:.7rem">${esc(dec.summary)}</div>
+
+    ${dec.reasoning?`<div class="p-sec-lbl">Reasoning</div><div class="p-sec-val" style="margin-bottom:.7rem">${esc(dec.reasoning)}</div>`:''}
+
+    ${rej.length>0?`
+    <div class="p-sec-lbl">Alternatives Rejected</div>
+    <div style="margin-bottom:.7rem">${rej.map(r=>`<div class="rej-item">✗ ${esc(r)}</div>`).join('')}</div>`:''}
+
+    ${(dec.tags||[]).length>0?`
+    <div class="p-sec-lbl">Tags</div>
+    <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.7rem">
+      ${(dec.tags||[]).map(t=>`<span class="tag t-lbl" onclick="activeDecisionFilter='${t}';switchTab('decisions');closePanel()" title="Filter by ${t}">${esc(t)}</span>`).join('')}
+    </div>`:''}
+
+    <div class="p-sec-lbl">Recorded at</div>
+    <div class="p-sec-val" style="font-family:var(--mono);margin-bottom:.7rem">${formatDateTime(dec.timestamp)}</div>
+
+    ${relatedFiles.length>0?`
+    <div class="divider"></div>
+    <div class="p-sec-lbl" style="margin-top:.7rem">Related Files</div>
+    ${relatedFiles.map(f=>`<div class="related-item" onclick="openFilePanel('${esc(f.path)}');"><span class="f-act fa-${f.action==='created'?'cre':f.action==='deleted'?'del':'mod'}">${f.action}</span> ${fileExt(f.path)} ${esc(f.path)}</div>`).join('')}`:''}
+
+    <div class="divider" style="margin-top:.7rem"></div>
+    <div class="copy-row">
+      <button class="copy-btn" onclick="copyText('${esc(dec.summary+': '+dec.reasoning)}','Decision copied!')">📋 Copy reasoning</button>
+      <button class="copy-btn" onclick="copyText('${esc(dec.id)}','ID copied!')">🔗 Copy ID</button>
+    </div>
+    `
+  );
+}
+
+// File detail
+function openFilePanel(path){
+  const file = (currentSession.files_modified||[]).find(f=>f.path===path);
+  if(!file) return;
+
+  // Find decisions that might reference this file
+  const fn = path.split('/').pop().replace(/\.\w+$/,'').toLowerCase();
+  const related = (currentSession.decisions||[]).filter(d=>
+    d.summary.toLowerCase().includes(fn)||
+    (d.reasoning||'').toLowerCase().includes(fn)||
+    path.toLowerCase().includes((d.tags||[]).join(' '))
+  );
+
+  openPanel(
+    `${fileExt(path)} ${esc(path)}`,
+    `
+    <div class="p-sec-lbl">File details</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.65rem .8rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.78rem">
+      <div style="margin-bottom:.35rem"><span style="color:var(--muted)">Path:</span> ${esc(path)}</div>
+      <div style="margin-bottom:.35rem"><span style="color:var(--muted)">Action:</span> <span class="f-act fa-${file.action==='created'?'cre':file.action==='deleted'?'del':file.action==='read'?'read':'mod'}">${file.action}</span></div>
+      ${file.description?`<div><span style="color:var(--muted)">Note:</span> ${esc(file.description)}</div>`:''}
+    </div>
+
+    ${related.length>0?`
+    <div class="p-sec-lbl">Decisions that mention this area</div>
+    ${related.map(d=>`<div class="related-item" onclick="openDecisionPanel('${d.id}')">🧠 ${esc(d.summary.slice(0,80))}${d.summary.length>80?'…':''}</div>`).join('')}`
+    : '<div style="font-size:.78rem;color:var(--muted)">No directly related decisions found</div>'}
+
+    <div class="copy-row" style="margin-top:.7rem">
+      <button class="copy-btn" onclick="copyText('${esc(path)}','Path copied!')">📋 Copy path</button>
+    </div>
+    `
+  );
+}
+
+// Alert detail
+function openAlertPanel(data){
+  const a = typeof data==='string'? JSON.parse(data.replace(/\\'/g,"'")) : data;
+  const icons = {critical:'🚨',error:'❌',warn:'⚠️',info:'ℹ️'};
+  const actions = {
+    token_pressure:  ['Compress context now', ()=>{ switchTab('tokens'); closePanel(); }],
+    token_critical:  ['See token breakdown',  ()=>{ switchTab('tokens'); closePanel(); }],
+    cost_warning:    ['See cost breakdown',   ()=>{ switchTab('tokens'); closePanel(); }],
+    cost_exceeded:   ['See cost breakdown',   ()=>{ switchTab('tokens'); closePanel(); }],
+    behavioral_drift:['Review decisions',     ()=>{ switchTab('decisions'); closePanel(); }],
+  };
+  const act = actions[a.alert_type];
+
+  openPanel(
+    `${icons[a.severity]||'🔔'} ${esc((a.alert_type||'').replace(/_/g,' '))}`,
+    `
+    <div class="al-card al-sev-${a.severity}" style="cursor:default">
+      <div class="al-ico">${icons[a.severity]||'🔔'}</div>
+      <div class="al-body">
+        <div class="al-title">${esc(a.message)}</div>
+        <div class="al-time">${formatDateTime(a.timestamp)}</div>
+      </div>
+      <span class="sev-tag st-${a.severity}">${(a.severity||'').toUpperCase()}</span>
+    </div>
+
+    ${a.detail&&Object.keys(a.detail).length>0?`
+    <div class="p-sec-lbl" style="margin-top:.7rem">Alert Data</div>
+    <div class="pre-block">${esc(JSON.stringify(a.detail,null,2))}</div>`:''}
+
+    ${act?`
+    <div style="margin-top:.9rem">
+      <button class="primary" onclick="(${act[1]})()">${act[0]} →</button>
+    </div>`:''}
+
+    <div style="margin-top:.85rem;font-size:.75rem;color:var(--muted);line-height:1.5">
+      <strong>What this means:</strong> ${alertExplanation(a.alert_type)}
+    </div>
+    `
+  );
+}
+
+function alertExplanation(type){
+  const exp = {
+    token_pressure:   'The context window is filling up. If it reaches 100%, the session will terminate and all unrecorded state is lost. Save a checkpoint now.',
+    token_critical:   'Context window is at or near its limit. The session was or will soon be terminated by the model. All state in agent-recall-ai is preserved.',
+    cost_warning:     'Session spending is approaching its configured budget. Review whether the task can be completed or if the budget should be adjusted.',
+    cost_exceeded:    'The configured cost budget was exceeded. agent-recall-ai performed an emergency save to preserve all state before shutdown.',
+    behavioral_drift: 'The agent produced output that appears to conflict with a recorded constraint. Review recent decisions for potential violations.',
+    package_hallucination: 'A tool call referenced a package name that does not appear to exist on PyPI. Verify before installing.',
+    tool_bloat:       'The same tool is being called repeatedly with similar inputs, suggesting an agent loop. Consider adding a next_step or constraint to break the cycle.',
+    compression_triggered: 'Automatic context compression was triggered to free space. Decision anchors were preserved; lower-importance messages were summarised.',
+  };
+  return esc(exp[type]||'See alert message above for details.');
+}
+
+// Tool call detail
+function openToolPanel(data){
+  const tc = typeof data==='string'? JSON.parse(data.replace(/\\'/g,"'")) : data;
+  openPanel(
+    `🔧 ${esc(tc.tool_name)}`,
+    `
+    <div class="p-sec-lbl">Tool name</div>
+    <div class="p-sec-val" style="font-family:var(--mono);font-weight:600;margin-bottom:.7rem">${esc(tc.tool_name)}</div>
+
+    <div class="p-sec-lbl">Input</div>
+    <div class="pre-block" style="margin-bottom:.7rem">${esc(tc.input_summary||'—')}</div>
+
+    <div class="p-sec-lbl">Output</div>
+    <div class="pre-block" style="margin-bottom:.7rem">${esc(tc.output_summary||'—')}</div>
+
+    <div class="p-sec-lbl">Tokens</div>
+    <div class="p-sec-val" style="font-family:var(--mono);margin-bottom:.7rem">${fmt(tc.output_tokens||0)} output tokens</div>
+
+    <div class="p-sec-lbl">Timestamp</div>
+    <div class="p-sec-val" style="font-family:var(--mono)">${formatDateTime(tc.timestamp)}</div>
+    `
+  );
+}
+
+// Next step detail
+function openNextStepPanel(idx){
+  const step = (currentSession.next_steps||[])[idx];
+  if(!step) return;
+
+  // Heuristic: find related decisions
+  const words = step.split(' ').filter(w=>w.length>4).map(w=>w.toLowerCase());
+  const related = (currentSession.decisions||[]).filter(d=>
+    words.some(w=>d.summary.toLowerCase().includes(w)||(d.reasoning||'').toLowerCase().includes(w))
+  );
+
+  openPanel(
+    `📋 Next Step ${idx+1}`,
+    `
+    <div class="p-sec-lbl">Task</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.7rem .85rem;font-size:.85rem;font-weight:500;margin-bottom:.9rem;line-height:1.5">${esc(step)}</div>
+
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.6rem .8rem;font-size:.76rem;color:var(--muted);margin-bottom:.9rem">
+      📌 This task was recorded during the session as a pending action item. It will appear in the <strong style="color:var(--text)">resume prompt</strong> when the session is revived after a context reset.
+    </div>
+
+    ${related.length>0?`
+    <div class="p-sec-lbl">Related Decisions</div>
+    ${related.map(d=>`<div class="related-item" onclick="openDecisionPanel('${d.id}')">🧠 ${esc(d.summary.slice(0,80))}${d.summary.length>80?'…':''}</div>`).join('')}`
+    :`<div style="font-size:.78rem;color:var(--muted)">No directly related decisions found for this step.</div>`}
+
+    <div class="copy-row" style="margin-top:.7rem">
+      <button class="copy-btn" onclick="copyText('${esc(step)}','Step copied!')">📋 Copy task text</button>
+    </div>
+    `
+  );
+}
+
+// Resume prompt
+function showResumePrompt(){
+  const d = currentSession;
+  const lines = [];
+  lines.push('## Resuming Agent Session');
+  lines.push(`Session: ${d.session_id}  |  Checkpoint: #${d.checkpoint_seq}`);
+  lines.push('');
+  if(d.goals&&d.goals.length){ lines.push('### Goals'); d.goals.forEach(g=>lines.push('- '+g)); lines.push(''); }
+  if(d.constraints&&d.constraints.length){ lines.push('### Constraints'); d.constraints.forEach(c=>lines.push('- '+c)); lines.push(''); }
+  if(d.context_summary){ lines.push('### Context'); lines.push(d.context_summary); lines.push(''); }
+  if(d.decisions&&d.decisions.length){
+    lines.push('### Key Decisions');
+    d.decisions.slice(-8).forEach(dec=>{
+      lines.push(`- **${dec.summary}**`);
+      if(dec.reasoning) lines.push(`  Reason: ${dec.reasoning.slice(0,120)}`);
+      if((dec.alternatives_rejected||[]).length) lines.push(`  Rejected: ${dec.alternatives_rejected.join(', ')}`);
+    });
+    lines.push('');
+  }
+  if(d.files_modified&&d.files_modified.length){
+    lines.push('### Files Modified');
+    [...new Set(d.files_modified.map(f=>f.path))].forEach(p=>lines.push('- `'+p+'`'));
+    lines.push('');
+  }
+  if(d.next_steps&&d.next_steps.length){ lines.push('### Next Steps'); d.next_steps.forEach((s,i)=>lines.push(`${i+1}. ${s}`)); lines.push(''); }
+  const tu = d.token_usage||{};
+  lines.push(`**Tokens:** ${fmt((tu.prompt||0)+(tu.completion||0))}  |  **Cost:** $${(d.cost_usd||0).toFixed(4)}`);
+
+  const text = lines.join('\n');
+
+  openPanel(
+    '📋 Resume Prompt',
+    `
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5">
+      Paste this into a new agent session to restore full context. All goals, constraints, decisions, and next steps are encoded.
+    </div>
+    <div class="pre-block">${esc(text)}</div>
+    <div class="copy-row" style="margin-top:.65rem">
+      <button class="primary" onclick="copyText(${JSON.stringify(text)},'Resume prompt copied!')">📋 Copy to clipboard</button>
+    </div>
+    `
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE LOADING
+// ═══════════════════════════════════════════════════════════════════════════
+function loadFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      // Add to sessions as "custom"
+      SESSIONS.custom = data;
+      const sel = document.getElementById('sess-pick');
+      let opt = sel.querySelector('option[value="custom"]');
+      if(!opt){ opt=document.createElement('option'); opt.value='custom'; sel.appendChild(opt); }
+      opt.textContent = '📂 ' + (data.session_id||'custom') + '  (loaded)';
+      sel.value = 'custom';
+      currentSession = data;
+      closePanel();
+      renderAll();
+      showToast('Loaded: ' + (data.session_id||'custom'));
+    } catch(err){
+      showToast('Invalid JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closePanel();
+  if(e.key>='1'&&e.key<='5'&&!e.ctrlKey&&!e.metaKey&&e.target.tagName!=='INPUT'){
+    const tabs=['overview','decisions','timeline','files','tokens'];
+    switchTab(tabs[parseInt(e.key)-1]);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+renderAll();
+</script>
+</body>
+</html>

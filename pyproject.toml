@@ -1,0 +1,102 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-recall-ai"
+version = "0.2.0"
+description = "Structured session checkpointing for AI agents — survive context limits, cost overruns, and session death"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "agent-recall-ai contributors" }]
+keywords = [
+    "ai", "agents", "llm", "checkpointing", "context-window",
+    "langchain", "openai", "anthropic", "session-recovery",
+    "semantic-compression", "decision-anchors",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.0",
+    "pydantic>=2.0",
+    "diskcache>=5.6",
+    "tiktoken>=0.7",
+]
+
+[project.optional-dependencies]
+openai      = ["openai>=1.30"]
+anthropic   = ["anthropic>=0.28"]
+langchain   = ["langchain-core>=0.2"]
+langgraph   = ["langgraph>=0.2"]
+redis       = ["redis>=5.0"]
+semantic    = ["sentence-transformers>=3.0", "numpy>=1.26"]
+grpc        = ["grpcio>=1.64", "grpcio-tools>=1.64", "protobuf>=5.0"]
+crewai      = ["crewai>=0.30"]
+smolagents  = ["smolagents>=0.2"]
+presidio    = ["presidio-analyzer>=2.2", "presidio-anonymizer>=2.2", "spacy>=3.7"]
+otlp-grpc   = [
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+]
+otlp-http   = [
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-http>=1.24",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "hatch>=1.12",
+    "fakeredis>=2.23",
+]
+all = [
+    "openai>=1.30",
+    "anthropic>=0.28",
+    "langchain-core>=0.2",
+    "langgraph>=0.2",
+    "redis>=5.0",
+    "sentence-transformers>=3.0",
+    "numpy>=1.26",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+]
+
+[project.scripts]
+agent-recall-ai = "agent_recall_ai.cli.main:app"
+
+[project.urls]
+Homepage  = "https://github.com/srinathsankara/agent-recall-ai"
+Issues    = "https://github.com/srinathsankara/agent-recall-ai/issues"
+Changelog = "https://github.com/srinathsankara/agent-recall-ai/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent_recall_ai"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths    = ["tests"]
+
+[tool.ruff]
+line-length    = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version      = "3.10"
+strict              = false
+ignore_missing_imports = true

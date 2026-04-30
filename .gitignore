@@ -1,0 +1,69 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── Test artifacts ────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# ── Runtime state (never commit live checkpoint data) ─────────────────────────
+.agent-checkpoint/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Type checking ─────────────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Secrets / credentials ─────────────────────────────────────────────────────
+.env
+.env.*
+secrets.json
+credentials.json
+*.pem
+*.key
+
+# ── Build tools ───────────────────────────────────────────────────────────────
+.hatch/
+*.rdb
+
+# ── Notebooks ─────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Benchmark output (generated, not source) ──────────────────────────────────
+benchmark_results/
+*.png
+*.svg
