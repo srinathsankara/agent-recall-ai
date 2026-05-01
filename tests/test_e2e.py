@@ -15,26 +15,22 @@ Simulates real-world agent workflows:
 """
 from __future__ import annotations
 
-import asyncio
-import concurrent.futures
 import json
-import re
 import threading
 
 import pytest
 
 from agent_recall_ai import Checkpoint, resume
 from agent_recall_ai.checkpoint import checkpoint as checkpoint_deco
-from agent_recall_ai.core.state import SessionStatus, TaskState
-from agent_recall_ai.core.compressor import compress_tool_output, build_resume_context
-from agent_recall_ai.monitors.cost_monitor import CostMonitor, CostBudgetExceeded
-from agent_recall_ai.monitors.token_monitor import TokenMonitor
+from agent_recall_ai.core.compressor import build_resume_context, compress_tool_output
+from agent_recall_ai.core.state import SessionStatus
+from agent_recall_ai.monitors.cost_monitor import CostBudgetExceeded, CostMonitor
 from agent_recall_ai.monitors.drift_monitor import DriftMonitor
+from agent_recall_ai.monitors.token_monitor import TokenMonitor
 from agent_recall_ai.privacy.redactor import PIIRedactor, SensitivityLevel
 from agent_recall_ai.privacy.versioned_schema import VersionedSchema
-from agent_recall_ai.storage.memory import MemoryStore
 from agent_recall_ai.storage.disk import DiskStore
-
+from agent_recall_ai.storage.memory import MemoryStore
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -71,7 +67,6 @@ class TestLongSessionCompressResume:
             cp.record_decision("Use Alembic", reasoning="Best migration tool")
         state = mem.load("ctx-build")
         # build_resume_context expects a dict (serialized state), not TaskState
-        import json
         state_dict = json.loads(state.model_dump_json())
         context = build_resume_context(state_dict)
         assert isinstance(context, str)
@@ -115,7 +110,7 @@ class TestThreadForking:
             cp.set_goal("Deploy service")
             cp.record_decision("Blue-green deployment")
 
-        main_state = mem.load("main")
+        mem.load("main")
         cp_main = Checkpoint("main", store=mem)
         forked = cp_main.fork("main-alt", store=mem)
 
@@ -135,7 +130,7 @@ class TestThreadForking:
             cp.set_goal("Original goal")
 
         parent_cp = Checkpoint("parent", store=mem)
-        fork = parent_cp.fork("child", store=mem)
+        parent_cp.fork("child", store=mem)
 
         child_state = mem.load("child")
         assert child_state.metadata.get("parent_thread_id") == "parent"
@@ -146,7 +141,7 @@ class TestThreadForking:
             cp.add_constraint("No downtime")
 
         cp2 = Checkpoint("preserved", store=mem)
-        fork = cp2.fork("preserved-alt", store=mem)
+        cp2.fork("preserved-alt", store=mem)
 
         child = mem.load("preserved-alt")
         assert "Goal A" in child.goals
@@ -215,8 +210,8 @@ class TestPIIRedactionE2E:
             )
 
         # In-memory state retains the original key
-        state_in_mem = resume("pii-test", store=store)
-        on_disk_json = (tmp_path / ".ac" / "sessions.db").__class__  # just check via reload
+        resume("pii-test", store=store)
+        (tmp_path / ".ac" / "sessions.db").__class__  # just check via reload
         state_loaded = store.load("pii-test")
         decision_reasoning = state_loaded.decisions[0].reasoning
         assert "sk-proj-" not in decision_reasoning
@@ -270,7 +265,7 @@ class TestPIIRedactionE2E:
         """Exception message in alert must be truncated to 200 chars."""
         long_secret = "sk-proj-" + "X" * 300  # 308 chars total
         with pytest.raises(ValueError):
-            with Checkpoint("exc-trunc", store=mem) as cp:
+            with Checkpoint("exc-trunc", store=mem):
                 raise ValueError(long_secret)
 
         state = mem.load("exc-trunc")
@@ -474,7 +469,7 @@ class TestMalformedStateHandling:
 
     def test_empty_goals_and_decisions_is_valid(self, mem):
         """A TaskState with no goals/decisions is still valid and saveable."""
-        with Checkpoint("bare-session", store=mem) as cp:
+        with Checkpoint("bare-session", store=mem):
             pass  # No ops — just open and close
 
         state = mem.load("bare-session")

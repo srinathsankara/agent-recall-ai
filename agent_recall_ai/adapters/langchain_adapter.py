@@ -18,15 +18,15 @@ Mode 2 — Callback Handler (for any chain):
 """
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any
 from uuid import UUID
 
 from .base import BaseAdapter, register_adapter
 
 try:
-    from langchain_core.chat_history import BaseChatMessageHistory
-    from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, SystemMessage
     from langchain_core.callbacks import BaseCallbackHandler
+    from langchain_core.chat_history import BaseChatMessageHistory
+    from langchain_core.messages import AIMessage, BaseMessage  # noqa: F401
     from langchain_core.outputs import LLMResult
     _LANGCHAIN_AVAILABLE = True
 except ImportError:
@@ -48,17 +48,17 @@ class LangChainAdapter(BaseAdapter):
 
     framework = "langchain"
 
-    def wrap(self, client: Any, **kwargs: Any) -> "CheckpointCallbackHandler":
+    def wrap(self, client: Any, **kwargs: Any) -> CheckpointCallbackHandler:
         """Default: wrap returns a callback handler."""
         return self.as_callback_handler()
 
-    def as_message_history(self) -> "CheckpointMessageHistory":
+    def as_message_history(self) -> CheckpointMessageHistory:
         """Return a BaseChatMessageHistory that auto-checkpoints."""
         if not _LANGCHAIN_AVAILABLE:
             raise ImportError("pip install 'agent-recall-ai[langchain]'")
         return CheckpointMessageHistory(self)
 
-    def as_callback_handler(self) -> "CheckpointCallbackHandler":
+    def as_callback_handler(self) -> CheckpointCallbackHandler:
         """Return a BaseCallbackHandler for use in chain.invoke(config=...)."""
         if not _LANGCHAIN_AVAILABLE:
             raise ImportError("pip install 'agent-recall-ai[langchain]'")
@@ -109,7 +109,7 @@ if _LANGCHAIN_AVAILABLE:
         def __init__(self, adapter: LangChainAdapter) -> None:
             super().__init__()
             self._adapter = adapter
-            self._active_tool: Optional[str] = None
+            self._active_tool: str | None = None
 
         def on_llm_end(
             self,

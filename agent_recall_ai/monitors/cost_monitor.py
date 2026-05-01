@@ -49,7 +49,7 @@ class CostMonitor(BaseMonitor):
         self._warned = False
         self._exceeded = False
 
-    def check(self, state: "TaskState") -> list[dict]:
+    def check(self, state: TaskState) -> list[dict]:
         alerts: list[dict] = []
         cost = state.cost_usd
 

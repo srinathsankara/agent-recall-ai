@@ -6,8 +6,7 @@ Framework-agnostic — update it from any callback or wrapper.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 # Cost per 1M tokens (USD) — updated April 2026
 _MODEL_COSTS: dict[str, dict[str, float]] = {
@@ -123,7 +122,7 @@ class TokenCostTracker:
         prompt_tokens: int = 0,
         completion_tokens: int = 0,
         cached_tokens: int = 0,
-        model: Optional[str] = None,
+        model: str | None = None,
     ) -> float:
         """Record a single LLM call. Returns the cost of this call in USD."""
         m = model or self.model
@@ -148,13 +147,13 @@ class TokenCostTracker:
             total.call_count += s.call_count
         return total
 
-    def context_utilization(self, current_prompt_tokens: int, model: Optional[str] = None) -> float:
+    def context_utilization(self, current_prompt_tokens: int, model: str | None = None) -> float:
         """Returns 0.0–1.0 how full the current context window is."""
         m = model or self.model
         limit = _MODEL_CONTEXT.get(m, 128_000)
         return min(current_prompt_tokens / limit, 1.0)
 
-    def estimated_remaining_calls(self, avg_tokens_per_call: Optional[int] = None) -> int:
+    def estimated_remaining_calls(self, avg_tokens_per_call: int | None = None) -> int:
         """Rough estimate of how many more LLM calls fit in the context window."""
         t = self.total()
         if t.call_count == 0:

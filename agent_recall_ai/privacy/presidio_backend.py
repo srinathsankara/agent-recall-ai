@@ -41,12 +41,11 @@ Supported entity types (subset of Presidio's full list):
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 try:
-    from presidio_analyzer import AnalyzerEngine, RecognizerResult
+    from presidio_analyzer import AnalyzerEngine, RecognizerResult  # noqa: F401
     from presidio_anonymizer import AnonymizerEngine
     from presidio_anonymizer.entities import OperatorConfig
     _PRESIDIO_AVAILABLE = True
@@ -89,7 +88,7 @@ class PresidioBackend:
 
     def __init__(
         self,
-        entities: Optional[list[str]] = None,
+        entities: list[str] | None = None,
         language: str = "en",
         score_threshold: float = 0.5,
         anonymize_operator: str = "replace",

@@ -1,13 +1,11 @@
 """Tests for the SemanticPruner — especially decision anchor protection."""
 from __future__ import annotations
 
-import pytest
-
 from agent_recall_ai.core.semantic_pruner import (
     SemanticPruner,
+    _estimate_tokens,
     _is_decision_anchor,
     _keyword_score,
-    _estimate_tokens,
 )
 
 

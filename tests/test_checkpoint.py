@@ -5,8 +5,7 @@ import pytest
 
 from agent_recall_ai import Checkpoint, resume
 from agent_recall_ai.core.state import SessionStatus
-from agent_recall_ai.monitors.cost_monitor import CostMonitor, CostBudgetExceeded
-from agent_recall_ai.monitors.token_monitor import TokenMonitor
+from agent_recall_ai.monitors.cost_monitor import CostBudgetExceeded, CostMonitor
 from agent_recall_ai.storage.memory import MemoryStore
 
 
@@ -29,7 +28,7 @@ class TestCheckpointBasicAPI:
 
     def test_failed_status_on_exception(self, store):
         with pytest.raises(ValueError):
-            with Checkpoint("task-err", store=store) as cp:
+            with Checkpoint("task-err", store=store):
                 raise ValueError("something went wrong")
         state = store.load("task-err")
         assert state.status == SessionStatus.FAILED

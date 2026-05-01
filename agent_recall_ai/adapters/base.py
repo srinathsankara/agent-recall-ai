@@ -14,23 +14,23 @@ Use `get_adapter(framework)` to retrieve a registered adapter class.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..checkpoint import Checkpoint
 
-_ADAPTER_REGISTRY: dict[str, type["BaseAdapter"]] = {}
+_ADAPTER_REGISTRY: dict[str, type[BaseAdapter]] = {}
 
 
 def register_adapter(name: str):
     """Class decorator to register an adapter under a framework name."""
-    def decorator(cls: type["BaseAdapter"]) -> type["BaseAdapter"]:
+    def decorator(cls: type[BaseAdapter]) -> type[BaseAdapter]:
         _ADAPTER_REGISTRY[name.lower()] = cls
         return cls
     return decorator
 
 
-def get_adapter(framework: str) -> type["BaseAdapter"]:
+def get_adapter(framework: str) -> type[BaseAdapter]:
     """
     Retrieve a registered adapter class by framework name.
 
@@ -63,7 +63,7 @@ class BaseAdapter(ABC):
     #: Framework name — set by subclasses
     framework: str = "custom"
 
-    def __init__(self, checkpoint: "Checkpoint") -> None:
+    def __init__(self, checkpoint: Checkpoint) -> None:
         self.checkpoint = checkpoint
         # Tag the checkpoint with the framework it was created from
         self.checkpoint.state.metadata["framework"] = self.framework

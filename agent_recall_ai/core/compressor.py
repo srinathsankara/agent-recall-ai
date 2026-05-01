@@ -9,7 +9,6 @@ Strategy:
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 
 def compress_tool_output(text: str, max_tokens: int = 500) -> tuple[str, bool]:

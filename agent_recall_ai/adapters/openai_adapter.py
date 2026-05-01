@@ -44,14 +44,14 @@ Usage:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .base import BaseAdapter, register_adapter
 
 logger = logging.getLogger(__name__)
 
 try:
-    import openai as _openai_sdk
+    import openai as _openai_sdk  # noqa: F401
     _OPENAI_AVAILABLE = True
 except ImportError:
     _OPENAI_AVAILABLE = False
@@ -142,7 +142,7 @@ class OpenAIAdapter(BaseAdapter):
         super().__init__(checkpoint)
         self.repair_conversations = repair_conversations
 
-    def wrap(self, client: Any, **kwargs: Any) -> "_WrappedOpenAIClient":
+    def wrap(self, client: Any, **kwargs: Any) -> _WrappedOpenAIClient:
         if not _OPENAI_AVAILABLE:
             raise ImportError(
                 "openai package is required: pip install 'agent-recall-ai[openai]'"
@@ -150,7 +150,7 @@ class OpenAIAdapter(BaseAdapter):
         return _WrappedOpenAIClient(client=client, adapter=self)
 
     @classmethod
-    def from_api_key(cls, checkpoint: Any, api_key: Optional[str] = None, **kwargs: Any) -> Any:
+    def from_api_key(cls, checkpoint: Any, api_key: str | None = None, **kwargs: Any) -> Any:
         if not _OPENAI_AVAILABLE:
             raise ImportError("pip install 'agent-recall-ai[openai]'")
         import openai
@@ -173,7 +173,7 @@ class _WrappedChatCompletions:
             repaired, n = repair_conversation(messages)
             if n > 0:
                 kwargs = {**kwargs, "messages": repaired}
-                from ..core.state import AlertType, AlertSeverity
+                from ..core.state import AlertSeverity, AlertType
                 self._adapter.checkpoint.state.add_alert(
                     alert_type=AlertType.BEHAVIORAL_DRIFT,
                     severity=AlertSeverity.WARN,

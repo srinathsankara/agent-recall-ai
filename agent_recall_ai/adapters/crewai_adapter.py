@@ -40,14 +40,14 @@ checkpoint lightweight.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .base import BaseAdapter, register_adapter
 
 logger = logging.getLogger(__name__)
 
 try:
-    import crewai as _crewai
+    import crewai as _crewai  # noqa: F401
     _CREWAI_AVAILABLE = True
 except ImportError:
     _CREWAI_AVAILABLE = False
@@ -131,7 +131,7 @@ class CrewAIAdapter(BaseAdapter):
         return crew
 
 
-def _wrap_task(task: Any, adapter: "CrewAIAdapter") -> None:
+def _wrap_task(task: Any, adapter: CrewAIAdapter) -> None:
     """Monkey-patch a single Task's execute() to record decisions."""
     original_execute = getattr(task, "execute", None)
     if original_execute is None:

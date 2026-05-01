@@ -22,7 +22,6 @@ Usage:
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from .otlp import OTLPExporter
 
@@ -40,11 +39,11 @@ class DatadogExporter(OTLPExporter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        site: Optional[str] = None,
+        api_key: str | None = None,
+        site: str | None = None,
         service: str = "agent-recall-ai",
         env: str = "production",
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> None:
         resolved_key = api_key or os.environ.get("DD_API_KEY", "")
         resolved_site = site or os.environ.get("DD_SITE", "datadoghq.com")

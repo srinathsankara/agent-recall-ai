@@ -56,14 +56,14 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Any, Callable, Optional
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider, ReadableSpan
+    from opentelemetry import trace  # noqa: F401
+    from opentelemetry.sdk.trace import ReadableSpan, TracerProvider  # noqa: F401
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
     from opentelemetry.trace import StatusCode
     _OTEL_AVAILABLE = True
@@ -71,13 +71,17 @@ except ImportError:
     _OTEL_AVAILABLE = False
 
 try:
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter as _GrpcExporter
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+        OTLPSpanExporter as _GrpcExporter,
+    )
     _GRPC_EXPORTER_AVAILABLE = True
 except ImportError:
     _GRPC_EXPORTER_AVAILABLE = False
 
 try:
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as _HttpExporter
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        OTLPSpanExporter as _HttpExporter,
+    )
     _HTTP_EXPORTER_AVAILABLE = True
 except ImportError:
     _HTTP_EXPORTER_AVAILABLE = False
@@ -113,8 +117,8 @@ class OTLPExporter:
 
     def __init__(
         self,
-        endpoint: Optional[str] = None,
-        headers: Optional[dict[str, str]] = None,
+        endpoint: str | None = None,
+        headers: dict[str, str] | None = None,
         service_name: str = "agent-recall-ai",
         use_grpc: bool = True,
         insecure: bool = False,
@@ -145,7 +149,7 @@ class OTLPExporter:
         self._provider.add_span_processor(BatchSpanProcessor(self._span_exporter))
         self._tracer = self._provider.get_tracer(service_name)
 
-    def _build_exporter(self, use_grpc: bool) -> "SpanExporter":
+    def _build_exporter(self, use_grpc: bool) -> SpanExporter:
         if use_grpc and _GRPC_EXPORTER_AVAILABLE:
             return _GrpcExporter(
                 endpoint=self._endpoint,

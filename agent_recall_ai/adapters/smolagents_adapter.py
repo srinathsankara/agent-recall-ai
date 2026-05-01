@@ -37,14 +37,14 @@ from __future__ import annotations
 
 import logging
 import types
-from typing import Any, Optional
+from typing import Any
 
 from .base import BaseAdapter, register_adapter
 
 logger = logging.getLogger(__name__)
 
 try:
-    import smolagents as _smolagents
+    import smolagents as _smolagents  # noqa: F401
     _SMOLAGENTS_AVAILABLE = True
 except ImportError:
     _SMOLAGENTS_AVAILABLE = False
@@ -116,7 +116,7 @@ class smolagentsAdapter(BaseAdapter):
         return agent
 
 
-def _wrap_step_method(agent: Any, adapter: "smolagentsAdapter") -> None:
+def _wrap_step_method(agent: Any, adapter: smolagentsAdapter) -> None:
     """Wrap agent.step() if it exists (smolagents >= 0.2)."""
     original_step = getattr(agent, "step", None)
     if original_step is None or getattr(agent, "_ac_step_wrapped", False):
@@ -163,7 +163,7 @@ def _wrap_step_method(agent: Any, adapter: "smolagentsAdapter") -> None:
     agent._ac_step_wrapped = True
 
 
-def _harvest_logs(agent: Any, adapter: "smolagentsAdapter") -> None:
+def _harvest_logs(agent: Any, adapter: smolagentsAdapter) -> None:
     """
     Scan agent.logs after a run to capture any steps not already recorded
     (e.g. when step() wrapping was not available).

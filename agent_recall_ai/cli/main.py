@@ -15,17 +15,16 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from rich import box
 
-from ..storage.disk import DiskStore
 from ..core.state import SessionStatus
+from ..storage.disk import DiskStore
 
 if sys.platform == "win32":
     try:
@@ -51,12 +50,12 @@ def _get_store() -> DiskStore:
 
 @app.command(name="list")
 def list_sessions(
-    status: Optional[str] = typer.Option(None, "--status", "-s", help="Filter: active|completed|failed"),
+    status: str | None = typer.Option(None, "--status", "-s", help="Filter: active|completed|failed"),
     limit: int = typer.Option(20, "--limit", "-n", help="Max sessions to show"),
 ):
     """List all saved checkpoints."""
     store = _get_store()
-    status_filter: Optional[SessionStatus] = None
+    status_filter: SessionStatus | None = None
     if status:
         try:
             status_filter = SessionStatus(status)
@@ -222,7 +221,7 @@ def resume(
 def export(
     session_id: str = typer.Argument(..., help="Session ID to export"),
     format: str = typer.Option("json", "--format", "-f", help="Output format: json | agenttest | handoff"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file (default: stdout)"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Output file (default: stdout)"),
 ):
     """Export a checkpoint as JSON, agenttest fixture, or handoff payload."""
     store = _get_store()
@@ -383,7 +382,6 @@ def install_hooks(
         agent-recall-ai install-hooks --global
         agent-recall-ai install-hooks --session my-project --dry-run
     """
-    import os
     import re
 
     # ── Resolve session name ──────────────────────────────────────────────────
@@ -459,14 +457,14 @@ def install_hooks(
     if dry_run:
         console.print(f"\n[bold cyan]Dry run — would write to:[/bold cyan] {config_path}\n")
         console.print(updated_json)
-        console.print(f"\n[dim]Run without --dry-run to apply.[/dim]")
+        console.print("\n[dim]Run without --dry-run to apply.[/dim]")
         return
 
     # ── Write ─────────────────────────────────────────────────────────────────
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(updated_json, encoding="utf-8")
 
-    console.print(f"\n[bold green]✓ Hooks installed![/bold green]")
+    console.print("\n[bold green]✓ Hooks installed![/bold green]")
     console.print(f"  Tool:    [cyan]{tool}[/cyan]")
     console.print(f"  Session: [cyan]{session_id}[/cyan]")
     console.print(f"  Config:  [dim]{config_path}[/dim]")

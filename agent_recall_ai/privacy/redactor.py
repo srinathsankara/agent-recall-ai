@@ -29,12 +29,11 @@ Usage:
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -238,10 +237,10 @@ class PIIRedactor:
     def __init__(
         self,
         sensitivity: SensitivityLevel = SensitivityLevel.HIGH,
-        custom_rules: Optional[list[RedactionRule]] = None,
+        custom_rules: list[RedactionRule] | None = None,
         dry_run: bool = False,
         hash_redacted: bool = False,
-        extra_backend: Optional[Any] = None,
+        extra_backend: Any | None = None,
     ) -> None:
         """
         Args:

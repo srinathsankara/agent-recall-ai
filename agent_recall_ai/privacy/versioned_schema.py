@@ -29,8 +29,9 @@ Usage:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +52,10 @@ class SchemaVersion:
     from_version: str        # e.g. "0.9.0"
     to_version: str          # e.g. "1.0.0"
     migrate_forward: MigrationFn
-    migrate_backward: Optional[MigrationFn] = None
+    migrate_backward: MigrationFn | None = None
     description: str = ""
 
 
-from typing import Optional
 
 
 class VersionedSchema:

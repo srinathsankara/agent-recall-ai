@@ -7,11 +7,9 @@ while keeping the full state intact.
 """
 from __future__ import annotations
 
-import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from ..core.state import SessionStatus, TaskState
 
@@ -92,7 +90,7 @@ class DiskStore:
                 ),
             )
 
-    def load(self, session_id: str) -> Optional[TaskState]:
+    def load(self, session_id: str) -> TaskState | None:
         """Load a TaskState by session_id. Returns None if not found."""
         with self._connect() as conn:
             row = conn.execute(
@@ -104,7 +102,7 @@ class DiskStore:
 
     def list_sessions(
         self,
-        status: Optional[SessionStatus] = None,
+        status: SessionStatus | None = None,
         limit: int = 50,
     ) -> list[dict]:
         """List sessions with lightweight metadata (no full state_json)."""

@@ -107,7 +107,7 @@ class PackageHallucinationMonitor(BaseMonitor):
         self._known = _KNOWN_SAFE | (extra_known or set())
         self._alerted_packages: set[str] = set()
 
-    def check(self, state: "TaskState") -> list[dict]:
+    def check(self, state: TaskState) -> list[dict]:
         alerts: list[dict] = []
         recent_calls = state.tool_calls[-10:]
 

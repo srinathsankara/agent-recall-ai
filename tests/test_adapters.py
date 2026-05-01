@@ -1,18 +1,19 @@
 """Tests for the plugin-based adapter registry and adapters."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from agent_recall_ai import Checkpoint
+from agent_recall_ai.adapters import AnthropicAdapter, LangChainAdapter, OpenAIAdapter
 from agent_recall_ai.adapters.base import (
+    _ADAPTER_REGISTRY,
     BaseAdapter,
     get_adapter,
     list_adapters,
     register_adapter,
-    _ADAPTER_REGISTRY,
 )
-from agent_recall_ai.adapters import AnthropicAdapter, OpenAIAdapter, LangChainAdapter
 from agent_recall_ai.storage.memory import MemoryStore
 
 
@@ -63,7 +64,7 @@ class TestAdapterRegistry:
 
 class TestAnthropicAdapter:
     def test_sets_framework_metadata(self, cp):
-        adapter = AnthropicAdapter(cp)
+        AnthropicAdapter(cp)
         assert cp.state.metadata.get("framework") == "anthropic"
 
     def test_on_llm_end_records_tokens(self, cp):
@@ -100,7 +101,7 @@ class TestAnthropicAdapter:
 
 class TestOpenAIAdapter:
     def test_sets_framework_metadata(self, cp):
-        adapter = OpenAIAdapter(cp)
+        OpenAIAdapter(cp)
         assert cp.state.metadata.get("framework") == "openai"
 
     def test_on_llm_end_records_tokens(self, cp):
@@ -122,7 +123,7 @@ class TestOpenAIAdapter:
 
 class TestLangChainAdapter:
     def test_sets_framework_metadata(self, cp):
-        adapter = LangChainAdapter(cp)
+        LangChainAdapter(cp)
         assert cp.state.metadata.get("framework") == "langchain"
 
     def test_wrap_returns_callback_handler(self, cp):

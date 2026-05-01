@@ -54,7 +54,6 @@ Anthropic prompt caching (automatic, 90% cost reduction):
     client = adapter.wrap(anthropic.Anthropic())
 """
 from .checkpoint import Checkpoint, checkpoint, resume
-from .privacy import PIIRedactor, SensitivityLevel, VersionedSchema
 from .core.state import (
     Alert,
     AlertSeverity,
@@ -74,6 +73,7 @@ from .monitors import (
     TokenMonitor,
     ToolBloatMonitor,
 )
+from .privacy import PIIRedactor, SensitivityLevel, VersionedSchema
 
 __version__ = "0.2.0"
 

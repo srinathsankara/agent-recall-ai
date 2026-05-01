@@ -1,19 +1,12 @@
 """Tests for core state models."""
 from __future__ import annotations
 
-import pytest
-from datetime import datetime
-
 from agent_recall_ai.core.state import (
-    Alert,
     AlertSeverity,
     AlertType,
-    Decision,
-    FileChange,
     SessionStatus,
     TaskState,
     TokenUsage,
-    ToolCall,
 )
 
 

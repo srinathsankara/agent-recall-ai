@@ -2,14 +2,10 @@
 from __future__ import annotations
 
 import pytest
-import tempfile
-import os
-from pathlib import Path
 
 from agent_recall_ai.core.state import SessionStatus, TaskState
 from agent_recall_ai.persistence.sqlite_provider import SQLiteProvider
 from agent_recall_ai.storage.memory import MemoryStore
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

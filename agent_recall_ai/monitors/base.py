@@ -20,18 +20,18 @@ class BaseMonitor(ABC):
     """
 
     @abstractmethod
-    def check(self, state: "TaskState") -> list[dict]:
+    def check(self, state: TaskState) -> list[dict]:
         """
         Inspect state and return a list of alert dicts to attach.
         Each dict must include: alert_type, severity, message, detail.
         """
         ...
 
-    def on_tokens(self, state: "TaskState") -> list[dict]:
+    def on_tokens(self, state: TaskState) -> list[dict]:
         return self.check(state)
 
-    def on_tool_call(self, state: "TaskState") -> list[dict]:
+    def on_tool_call(self, state: TaskState) -> list[dict]:
         return []
 
-    def on_decision(self, state: "TaskState") -> list[dict]:
+    def on_decision(self, state: TaskState) -> list[dict]:
         return []

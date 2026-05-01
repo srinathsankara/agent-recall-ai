@@ -10,16 +10,14 @@ Tests for new features added in Phase 8:
 from __future__ import annotations
 
 import copy
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from agent_recall_ai import Checkpoint
 from agent_recall_ai.adapters.anthropic_adapter import _inject_cache_breakpoints
-from agent_recall_ai.adapters.langgraph_adapter import LangGraphAdapter, _LANGGRAPH_AVAILABLE
+from agent_recall_ai.adapters.langgraph_adapter import _LANGGRAPH_AVAILABLE, LangGraphAdapter
 from agent_recall_ai.storage.memory import MemoryStore
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Anthropic prompt caching
@@ -234,7 +232,7 @@ class TestCheckpointFork:
         cp = Checkpoint("main", store=store)
         cp.save()
 
-        fork = cp.fork("fork-store")
+        cp.fork("fork-store")
         # Fork should be accessible from the same store
         loaded = store.load("fork-store")
         assert loaded is not None
@@ -245,7 +243,7 @@ class TestCheckpointFork:
         cp.save()
 
         custom_store = MemoryStore()
-        fork = cp.fork("fork-custom", store=custom_store)
+        cp.fork("fork-custom", store=custom_store)
 
         # Should be in custom store
         assert custom_store.load("fork-custom") is not None
@@ -409,7 +407,7 @@ class TestOTLPExporterImport:
 
     def test_export_session_noop_without_otel(self):
         """export_session should not crash even if otel is absent."""
-        from agent_recall_ai.exporters.otlp import OTLPExporter, _OTEL_AVAILABLE
+        from agent_recall_ai.exporters.otlp import _OTEL_AVAILABLE, OTLPExporter
         if _OTEL_AVAILABLE:
             pytest.skip("opentelemetry-sdk installed, noop path not active")
         exporter = object.__new__(OTLPExporter)
@@ -432,7 +430,7 @@ class TestPresidioBackend:
 
     @pytest.fixture
     def backend(self):
-        from agent_recall_ai.privacy.presidio_backend import PresidioBackend, _PRESIDIO_AVAILABLE
+        from agent_recall_ai.privacy.presidio_backend import _PRESIDIO_AVAILABLE, PresidioBackend
         if not _PRESIDIO_AVAILABLE:
             pytest.skip("presidio not installed")
         return PresidioBackend(score_threshold=0.5)
@@ -484,6 +482,10 @@ class TestPresidioBackend:
 # Anthropic adapter — pre-inference token counting
 # ══════════════════════════════════════════════════════════════════════════════
 
+@pytest.mark.skipif(
+    not __import__("importlib").util.find_spec("anthropic"),
+    reason="anthropic package not installed",
+)
 class TestAnthropicAdapterPromptCaching:
     """Verify AnthropicAdapter injects cache_control and calls count_tokens."""
 

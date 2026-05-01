@@ -16,21 +16,21 @@ Registry:
     adapter = AdapterClass(checkpoint)
     client = adapter.wrap(anthropic.Anthropic())
 """
-from .base import BaseAdapter, get_adapter, list_adapters, register_adapter
 from .anthropic_adapter import AnthropicAdapter, _inject_cache_breakpoints
-from .openai_adapter import OpenAIAdapter, repair_conversation
+from .base import BaseAdapter, get_adapter, list_adapters, register_adapter
 from .langchain_adapter import LangChainAdapter
 from .langgraph_adapter import LangGraphAdapter
+from .openai_adapter import OpenAIAdapter, repair_conversation
 
 # Optional adapters — import only if the framework is installed
 try:
-    from .crewai_adapter import CrewAIAdapter
+    from .crewai_adapter import CrewAIAdapter  # noqa: F401
     _CREWAI = True
 except ImportError:
     _CREWAI = False
 
 try:
-    from .smolagents_adapter import smolagentsAdapter
+    from .smolagents_adapter import smolagentsAdapter  # noqa: F401
     _SMOLAGENTS = True
 except ImportError:
     _SMOLAGENTS = False

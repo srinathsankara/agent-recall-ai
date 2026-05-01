@@ -1,8 +1,6 @@
 """Tests for the token/cost tracker."""
 from __future__ import annotations
 
-import pytest
-
 from agent_recall_ai.core.tracker import TokenCostTracker
 
 

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..core.state import AlertSeverity, AlertType
 from ..core.compressor import compress_tool_output
+from ..core.state import AlertSeverity, AlertType
 from .base import BaseMonitor
 
 if TYPE_CHECKING:
@@ -39,10 +39,10 @@ class ToolBloatMonitor(BaseMonitor):
         self._alerted_tools: set[str] = set()
         self._fraction_alerted: bool = False
 
-    def check(self, state: "TaskState") -> list[dict]:
+    def check(self, state: TaskState) -> list[dict]:
         return []
 
-    def on_tool_call(self, state: "TaskState") -> list[dict]:
+    def on_tool_call(self, state: TaskState) -> list[dict]:
         if not state.tool_calls:
             return []
 

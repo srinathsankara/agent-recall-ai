@@ -32,11 +32,11 @@ import functools
 import inspect
 import json
 import logging
-import os
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
-from .core.state import Alert, AlertSeverity, AlertType, SessionStatus, TaskState, TokenUsage
+from .core.state import AlertSeverity, AlertType, SessionStatus, TaskState
 from .core.tracker import TokenCostTracker
 from .monitors.base import BaseMonitor
 from .storage.disk import DiskStore
@@ -44,7 +44,7 @@ from .storage.memory import MemoryStore
 
 logger = logging.getLogger(__name__)
 
-Store = Union[DiskStore, MemoryStore]
+Store = DiskStore | MemoryStore
 
 
 class Checkpoint:
@@ -62,12 +62,12 @@ class Checkpoint:
     def __init__(
         self,
         session_id: str,
-        store: Optional[Store] = None,
-        monitors: Optional[list[BaseMonitor]] = None,
+        store: Store | None = None,
+        monitors: list[BaseMonitor] | None = None,
         model: str = "gpt-4o-mini",
         auto_save_every: int = 10,
-        redactor: Optional[Any] = None,       # PIIRedactor instance
-        schema: Optional[Any] = None,         # VersionedSchema instance
+        redactor: Any | None = None,       # PIIRedactor instance
+        schema: Any | None = None,         # VersionedSchema instance
     ) -> None:
         self.session_id = session_id
         self._store = store or DiskStore()
@@ -92,7 +92,7 @@ class Checkpoint:
 
     # ── Sync context manager ──────────────────────────────────────────────────
 
-    def __enter__(self) -> "Checkpoint":
+    def __enter__(self) -> Checkpoint:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -112,7 +112,7 @@ class Checkpoint:
 
     # ── Async context manager ─────────────────────────────────────────────────
 
-    async def __aenter__(self) -> "Checkpoint":
+    async def __aenter__(self) -> Checkpoint:
         return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -156,11 +156,10 @@ class Checkpoint:
         self,
         summary: str,
         reasoning: str = "",
-        alternatives_rejected: Optional[list[str]] = None,
-        tags: Optional[list[str]] = None,
+        alternatives_rejected: list[str] | None = None,
+        tags: list[str] | None = None,
     ) -> Any:
         """Record a decision. Returns the Decision object for chaining or inspection."""
-        from .core.state import Decision as _Decision
         decision = self._state.add_decision(
             summary=summary,
             reasoning=reasoning,
@@ -190,7 +189,7 @@ class Checkpoint:
         prompt: int = 0,
         completion: int = 0,
         cached: int = 0,
-        model: Optional[str] = None,
+        model: str | None = None,
     ) -> float:
         """Record a token usage event. Returns cost of this call in USD."""
         cost = self._tracker.record(
@@ -317,9 +316,9 @@ class Checkpoint:
     def fork(
         self,
         target_session_id: str,
-        store: Optional[Store] = None,
-        monitors: Optional[list[BaseMonitor]] = None,
-    ) -> "Checkpoint":
+        store: Store | None = None,
+        monitors: list[BaseMonitor] | None = None,
+    ) -> Checkpoint:
         """
         Fork this session into a new thread so you can explore an alternative
         reasoning path from the current checkpoint without modifying the original.
@@ -377,7 +376,7 @@ class Checkpoint:
         return forked_cp
 
 
-def resume(session_id: str, store: Optional[Store] = None) -> Optional[TaskState]:
+def resume(session_id: str, store: Store | None = None) -> TaskState | None:
     """
     Load a saved checkpoint by session_id.
     Returns None if no checkpoint exists.
@@ -388,13 +387,13 @@ def resume(session_id: str, store: Optional[Store] = None) -> Optional[TaskState
 
 def checkpoint(
     session_id: str,
-    store: Optional[Store] = None,
-    monitors: Optional[list[BaseMonitor]] = None,
+    store: Store | None = None,
+    monitors: list[BaseMonitor] | None = None,
     model: str = "gpt-4o-mini",
     auto_save_every: int = 10,
-    redactor: Optional[Any] = None,
-    schema: Optional[Any] = None,
-) -> Union[Checkpoint, Callable]:
+    redactor: Any | None = None,
+    schema: Any | None = None,
+) -> Checkpoint | Callable:
     """
     Decorator **and** factory function.
 
@@ -464,7 +463,7 @@ def checkpoint(
         """Returned by checkpoint() — usable as decorator or context manager."""
 
         def __init__(self) -> None:
-            self._cp: Optional[Checkpoint] = None
+            self._cp: Checkpoint | None = None
 
         def __call__(self, fn: Callable) -> Callable:           # @checkpoint("id")
             return decorator(fn)

@@ -17,11 +17,10 @@ Decision Anchors are messages containing any of:
 """
 from __future__ import annotations
 
-import json
 import logging
 import re
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +136,7 @@ class SemanticPruner:
         self.anchor_threshold = anchor_threshold
         self.target_ratio = target_ratio
         self.min_messages_kept = min_messages_kept
-        self._embedder: Optional[Any] = None
+        self._embedder: Any | None = None
         self._embeddings_available = False
 
         if use_embeddings:
@@ -269,7 +268,6 @@ class SemanticPruner:
         # Insert a compression notice at the point of first gap
         result: list[dict[str, Any]] = []
         prev_idx = -1
-        pruned_block: list[str] = []
 
         for s in sorted(kept, key=lambda x: x.index):
             if s.index > prev_idx + 1:

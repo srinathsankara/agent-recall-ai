@@ -42,22 +42,22 @@ the same point but can diverge from there.
 """
 from __future__ import annotations
 
-import json
 import logging
+from collections.abc import AsyncIterator, Iterator
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Dict, Iterator, Optional, TYPE_CHECKING
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
     from langgraph.checkpoint.base import (
         BaseCheckpointSaver,
+        ChannelVersions,
         Checkpoint,
         CheckpointMetadata,
         CheckpointTuple,
         get_checkpoint_id,
     )
-    from langgraph.checkpoint.base import ChannelVersions
     _LANGGRAPH_AVAILABLE = True
 except ImportError:
     _LANGGRAPH_AVAILABLE = False
@@ -71,7 +71,7 @@ def _thread_from_config(config: dict) -> str:
     return config.get("configurable", {}).get("thread_id", "default")
 
 
-def _checkpoint_id_from_config(config: dict) -> Optional[str]:
+def _checkpoint_id_from_config(config: dict) -> str | None:
     return config.get("configurable", {}).get("checkpoint_id")
 
 
@@ -109,26 +109,26 @@ if _LANGGRAPH_AVAILABLE:
         # ── Factory helpers ───────────────────────────────────────────────────
 
         @classmethod
-        def from_memory(cls) -> "LangGraphAdapter":
+        def from_memory(cls) -> LangGraphAdapter:
             """In-memory store — perfect for tests and short-lived agents."""
             from ..storage.memory import MemoryStore
             return cls(MemoryStore())
 
         @classmethod
-        def from_sqlite(cls, db_path: str = "agent_recall_ai.db") -> "LangGraphAdapter":
+        def from_sqlite(cls, db_path: str = "agent_recall_ai.db") -> LangGraphAdapter:
             """SQLite-backed persistent store."""
             from ..storage.disk import DiskStore
             return cls(DiskStore(db_path))
 
         @classmethod
-        def from_redis(cls, url: str = "redis://localhost:6379", **kwargs: Any) -> "LangGraphAdapter":
+        def from_redis(cls, url: str = "redis://localhost:6379", **kwargs: Any) -> LangGraphAdapter:
             """Redis-backed distributed store."""
             from ..persistence.redis_provider import RedisProvider
             return cls(RedisProvider(url, **kwargs))
 
         # ── Internal key helpers ──────────────────────────────────────────────
 
-        def _session_key(self, thread_id: str, checkpoint_id: Optional[str] = None) -> str:
+        def _session_key(self, thread_id: str, checkpoint_id: str | None = None) -> str:
             if checkpoint_id:
                 return f"langgraph:{thread_id}:{checkpoint_id}"
             return f"langgraph:{thread_id}:latest"
@@ -140,7 +140,7 @@ if _LANGGRAPH_AVAILABLE:
             self._store.save(versioned_key, data)
             self._store.save(latest_key, data)
 
-        def _read(self, key: str) -> Optional[dict]:
+        def _read(self, key: str) -> dict | None:
             try:
                 return self._store.load(key)
             except Exception:
@@ -148,7 +148,7 @@ if _LANGGRAPH_AVAILABLE:
 
         # ── BaseCheckpointSaver interface ─────────────────────────────────────
 
-        def get_tuple(self, config: dict) -> Optional[CheckpointTuple]:
+        def get_tuple(self, config: dict) -> CheckpointTuple | None:
             """Load the most recent (or specified) checkpoint for a thread."""
             thread_id = _thread_from_config(config)
             checkpoint_id = _checkpoint_id_from_config(config)
@@ -191,11 +191,11 @@ if _LANGGRAPH_AVAILABLE:
 
         def list(
             self,
-            config: Optional[dict],
+            config: dict | None,
             *,
-            filter: Optional[Dict[str, Any]] = None,
-            before: Optional[dict] = None,
-            limit: Optional[int] = None,
+            filter: dict[str, Any] | None = None,
+            before: dict | None = None,
+            limit: int | None = None,
         ) -> Iterator[CheckpointTuple]:
             """
             List checkpoints for a thread.
@@ -210,7 +210,7 @@ if _LANGGRAPH_AVAILABLE:
             if latest is not None:
                 yield latest
 
-        async def aget_tuple(self, config: dict) -> Optional[CheckpointTuple]:
+        async def aget_tuple(self, config: dict) -> CheckpointTuple | None:
             """Async version of get_tuple."""
             import asyncio
             return await asyncio.to_thread(self.get_tuple, config)
@@ -228,11 +228,11 @@ if _LANGGRAPH_AVAILABLE:
 
         async def alist(
             self,
-            config: Optional[dict],
+            config: dict | None,
             *,
-            filter: Optional[Dict[str, Any]] = None,
-            before: Optional[dict] = None,
-            limit: Optional[int] = None,
+            filter: dict[str, Any] | None = None,
+            before: dict | None = None,
+            limit: int | None = None,
         ) -> AsyncIterator[CheckpointTuple]:
             """Async version of list."""
             for item in self.list(config, filter=filter, before=before, limit=limit):
@@ -325,13 +325,13 @@ else:
             )
 
         @classmethod
-        def from_memory(cls) -> "LangGraphAdapter":
+        def from_memory(cls) -> LangGraphAdapter:
             raise ImportError("pip install 'agent-recall-ai[langgraph]'")
 
         @classmethod
-        def from_sqlite(cls, *args: Any, **kwargs: Any) -> "LangGraphAdapter":
+        def from_sqlite(cls, *args: Any, **kwargs: Any) -> LangGraphAdapter:
             raise ImportError("pip install 'agent-recall-ai[langgraph]'")
 
         @classmethod
-        def from_redis(cls, *args: Any, **kwargs: Any) -> "LangGraphAdapter":
+        def from_redis(cls, *args: Any, **kwargs: Any) -> LangGraphAdapter:
             raise ImportError("pip install 'agent-recall-ai[langgraph]'")

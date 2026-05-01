@@ -6,7 +6,7 @@ Fires CRITICAL at compress_at — triggering proactive conversation compression.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..core.state import AlertSeverity, AlertType
 from ..core.tracker import TokenCostTracker
@@ -39,7 +39,7 @@ class TokenMonitor(BaseMonitor):
         self._compress_fired = False
         self._context_limit = TokenCostTracker.context_limit(model)
 
-    def check(self, state: "TaskState") -> list[dict]:
+    def check(self, state: TaskState) -> list[dict]:
         alerts: list[dict] = []
         util = state.context_utilization
 

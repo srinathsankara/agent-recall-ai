@@ -7,11 +7,9 @@ Identical interface to RedisProvider for drop-in substitution.
 """
 from __future__ import annotations
 
-import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from ..core.state import SessionStatus, TaskState
 
@@ -134,7 +132,7 @@ class SQLiteProvider:
                     (state.session_id, d.summary[:200], is_anchor, d.timestamp.isoformat()),
                 )
 
-    def load(self, session_id: str) -> Optional[TaskState]:
+    def load(self, session_id: str) -> TaskState | None:
         """Load a TaskState by session_id. Returns None if not found."""
         with self._connect() as conn:
             row = conn.execute(
@@ -146,8 +144,8 @@ class SQLiteProvider:
 
     def list_sessions(
         self,
-        status: Optional[SessionStatus] = None,
-        framework: Optional[str] = None,
+        status: SessionStatus | None = None,
+        framework: str | None = None,
         limit: int = 50,
     ) -> list[dict]:
         query = """
@@ -205,7 +203,7 @@ class SQLiteProvider:
             ).fetchone()
             return row is not None
 
-    def count(self, status: Optional[SessionStatus] = None) -> int:
+    def count(self, status: SessionStatus | None = None) -> int:
         with self._connect() as conn:
             if status:
                 row = conn.execute(

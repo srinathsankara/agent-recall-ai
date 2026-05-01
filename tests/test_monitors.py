@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import pytest
 
-from agent_recall_ai.core.state import AlertType, SessionStatus, TaskState, TokenUsage
-from agent_recall_ai.monitors.cost_monitor import CostMonitor, CostBudgetExceeded
-from agent_recall_ai.monitors.token_monitor import TokenMonitor
+from agent_recall_ai.core.state import AlertType, TaskState
+from agent_recall_ai.monitors.cost_monitor import CostBudgetExceeded, CostMonitor
 from agent_recall_ai.monitors.drift_monitor import DriftMonitor
 from agent_recall_ai.monitors.package_monitor import (
     PackageHallucinationMonitor,
-    _normalize_package,
     _is_suspicious,
+    _normalize_package,
 )
+from agent_recall_ai.monitors.token_monitor import TokenMonitor
 from agent_recall_ai.monitors.tool_bloat_monitor import ToolBloatMonitor
 
 
@@ -127,7 +127,7 @@ class TestDriftMonitor:
         state = TaskState(session_id="s1")
         state.constraints = ["Do not deploy to production without approval"]
         state.add_decision("Deployed to production environment directly")
-        alerts1 = m.check(state)
+        m.check(state)
         alerts2 = m.check(state)  # same decision, should not re-fire
         assert len(alerts2) == 0
 

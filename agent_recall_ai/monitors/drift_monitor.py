@@ -41,7 +41,7 @@ class DriftMonitor(BaseMonitor):
         self.sensitivity = sensitivity
         self._alerted_decisions: set[str] = set()
 
-    def check(self, state: "TaskState") -> list[dict]:
+    def check(self, state: TaskState) -> list[dict]:
         if not state.constraints:
             return []
 

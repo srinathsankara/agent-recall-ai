@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -133,14 +133,14 @@ class TaskState(BaseModel):
     checkpoint_seq: int = 0
 
     # Schema version — stamped by VersionedSchema before serialization
-    schema_version: Optional[str] = None
+    schema_version: str | None = None
 
     def add_decision(
         self,
         summary: str,
         reasoning: str = "",
-        alternatives_rejected: Optional[list[str]] = None,
-        tags: Optional[list[str]] = None,
+        alternatives_rejected: list[str] | None = None,
+        tags: list[str] | None = None,
     ) -> Decision:
         d = Decision(
             summary=summary,
@@ -176,7 +176,7 @@ class TaskState(BaseModel):
         return tc
 
     def add_alert(
-        self, alert_type: AlertType, severity: AlertSeverity, message: str, detail: Optional[dict] = None
+        self, alert_type: AlertType, severity: AlertSeverity, message: str, detail: dict | None = None
     ) -> Alert:
         a = Alert(alert_type=alert_type, severity=severity, message=message, detail=detail or {})
         self.alerts.append(a)
@@ -223,11 +223,10 @@ class TaskState(BaseModel):
                 "agreed", "principle", "rule", "avoid", "forbidden",
             })
 
-            def _is_anchor(d: "Decision") -> bool:  # noqa: F821
+            def _is_anchor(d: Decision) -> bool:  # noqa: F821
                 text = (d.summary + " " + d.reasoning).lower()
                 return any(kw in text for kw in _anchor_kws)
 
-            recent_set = set(id(d) for d in self.decisions[-8:])
             anchors_outside_recent = [d for d in self.decisions[:-8] if _is_anchor(d)]
             recent = self.decisions[-8:]
             # Build deduplicated ordered list: anchors first (oldest→newest), then recent

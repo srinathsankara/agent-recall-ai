@@ -1,13 +1,11 @@
 """Tests for the context compressor utility functions."""
 from __future__ import annotations
 
-import pytest
-
 from agent_recall_ai.core.compressor import (
-    compress_tool_output,
-    compress_decision_log,
     build_resume_context,
     compress_conversation_history,
+    compress_decision_log,
+    compress_tool_output,
     estimate_tokens,
 )
 

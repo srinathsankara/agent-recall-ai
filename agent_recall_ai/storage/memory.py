@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import copy
 from datetime import datetime, timezone
-from typing import Optional
 
 from ..core.state import SessionStatus, TaskState
 
@@ -22,13 +21,13 @@ class MemoryStore:
         state.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         self._sessions[state.session_id] = copy.deepcopy(state)
 
-    def load(self, session_id: str) -> Optional[TaskState]:
+    def load(self, session_id: str) -> TaskState | None:
         state = self._sessions.get(session_id)
         return copy.deepcopy(state) if state else None
 
     def list_sessions(
         self,
-        status: Optional[SessionStatus] = None,
+        status: SessionStatus | None = None,
         limit: int = 50,
     ) -> list[dict]:
         sessions = list(self._sessions.values())

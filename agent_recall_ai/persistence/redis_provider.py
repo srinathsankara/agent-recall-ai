@@ -23,7 +23,7 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from ..core.state import SessionStatus, TaskState
 
@@ -140,7 +140,7 @@ class RedisProvider:
             except Exception:
                 pass
 
-    def load(self, session_id: str) -> Optional[TaskState]:
+    def load(self, session_id: str) -> TaskState | None:
         """Load a TaskState by session_id. Returns None if not found or expired."""
         raw = self._client.get(self._state_key(session_id))
         if raw is None:
@@ -153,7 +153,7 @@ class RedisProvider:
 
     def list_sessions(
         self,
-        status: Optional[SessionStatus] = None,
+        status: SessionStatus | None = None,
         limit: int = 50,
     ) -> list[dict]:
         """List sessions ordered by most recently updated."""
@@ -210,7 +210,7 @@ class RedisProvider:
     def exists(self, session_id: str) -> bool:
         return bool(self._client.exists(self._state_key(session_id)))
 
-    def count(self, status: Optional[SessionStatus] = None) -> int:
+    def count(self, status: SessionStatus | None = None) -> int:
         if status is None:
             return int(self._client.zcard(self._index_key()))
         # For filtered count we need to scan (expensive — use SQLite for analytics)

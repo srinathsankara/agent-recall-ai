@@ -6,7 +6,7 @@ Components:
     VersionedSchema  — forward/backward compatible schema migrations
 """
 from .redactor import PIIRedactor, RedactionResult, RedactionRule, SensitivityLevel
-from .versioned_schema import VersionedSchema, SchemaVersion, MigrationError
+from .versioned_schema import MigrationError, SchemaVersion, VersionedSchema
 
 __all__ = [
     "PIIRedactor",

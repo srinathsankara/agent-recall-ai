@@ -8,7 +8,6 @@ temp directory so real disk state is never touched.
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 
 import pytest
@@ -17,7 +16,6 @@ from typer.testing import CliRunner
 from agent_recall_ai.cli.main import app
 from agent_recall_ai.core.state import SessionStatus, TaskState
 from agent_recall_ai.storage.disk import DiskStore
-
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 

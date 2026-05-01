@@ -6,18 +6,18 @@ Tests for Phase 5 privacy components:
 from __future__ import annotations
 
 import json
+
 import pytest
 
 from agent_recall_ai.privacy import (
+    MigrationError,
     PIIRedactor,
-    RedactionRule,
     RedactionResult,
+    RedactionRule,
+    SchemaVersion,
     SensitivityLevel,
     VersionedSchema,
-    SchemaVersion,
-    MigrationError,
 )
-
 
 # ===========================================================================
 # PIIRedactor tests
@@ -681,10 +681,9 @@ class TestCheckpointWithVersionedSchema:
     """Verify that Checkpoint.save() stamps schema_version."""
 
     def test_schema_version_stamped_on_save(self):
-        import json
         from agent_recall_ai import Checkpoint
-        from agent_recall_ai.storage.memory import MemoryStore
         from agent_recall_ai.privacy import VersionedSchema
+        from agent_recall_ai.storage.memory import MemoryStore
 
         store = MemoryStore()
         schema = VersionedSchema()

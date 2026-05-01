@@ -34,14 +34,14 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from .base import BaseAdapter, register_adapter
 
 logger = logging.getLogger(__name__)
 
 try:
-    import anthropic as _anthropic_sdk
+    import anthropic as _anthropic_sdk  # noqa: F401
     _ANTHROPIC_AVAILABLE = True
 except ImportError:
     _ANTHROPIC_AVAILABLE = False
@@ -142,7 +142,7 @@ class AnthropicAdapter(BaseAdapter):
         self.enable_prompt_caching = enable_prompt_caching
         self.count_tokens_before_call = count_tokens_before_call
 
-    def wrap(self, client: Any, **kwargs: Any) -> "_WrappedAnthropicClient":
+    def wrap(self, client: Any, **kwargs: Any) -> _WrappedAnthropicClient:
         if not _ANTHROPIC_AVAILABLE:
             raise ImportError(
                 "anthropic package is required: pip install 'agent-recall-ai[anthropic]'"
@@ -150,7 +150,7 @@ class AnthropicAdapter(BaseAdapter):
         return _WrappedAnthropicClient(client=client, adapter=self)
 
     @classmethod
-    def from_api_key(cls, checkpoint: Any, api_key: Optional[str] = None, **kwargs: Any) -> Any:
+    def from_api_key(cls, checkpoint: Any, api_key: str | None = None, **kwargs: Any) -> Any:
         """Convenience constructor: creates client and wraps it in one call."""
         if not _ANTHROPIC_AVAILABLE:
             raise ImportError("pip install 'agent-recall-ai[anthropic]'")
