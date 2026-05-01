@@ -1,5 +1,7 @@
-"""Tests for SQLiteProvider and MemoryStore persistence."""
+"""Tests for SQLiteProvider, MemoryStore, and RedisProvider persistence."""
 from __future__ import annotations
+
+import os
 
 import pytest
 
@@ -160,3 +162,131 @@ class TestMemoryStore:
         memory_store.save(make_state("b"))
         memory_store.clear()
         assert memory_store.count() == 0
+
+
+# ── RedisProvider Tests ───────────────────────────────────────────────────────
+
+_REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+# Skip entire class if redis package is not installed or server unreachable
+def _redis_available() -> bool:
+    try:
+        import redis as _r
+        client = _r.from_url(_REDIS_URL, socket_connect_timeout=1)
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
+@pytest.fixture
+def redis_provider():
+    """RedisProvider scoped to a unique test prefix so tests don't collide."""
+    import time
+
+    from agent_recall_ai.persistence.redis_provider import RedisProvider
+    prefix = f"test_{int(time.time() * 1000)}"
+    provider = RedisProvider(url=_REDIS_URL, prefix=prefix)
+    yield provider
+    # Cleanup: remove all keys for this prefix
+    try:
+        keys = provider._client.keys(f"{prefix}:*")
+        if keys:
+            provider._client.delete(*keys)
+    except Exception:
+        pass
+
+
+@pytest.mark.skipif(not _redis_available(), reason="Redis not reachable")
+class TestRedisProvider:
+    def test_ping(self, redis_provider):
+        assert redis_provider.ping() is True
+
+    def test_save_and_load(self, redis_provider):
+        state = make_state("redis-session-1")
+        redis_provider.save(state)
+        loaded = redis_provider.load("redis-session-1")
+        assert loaded is not None
+        assert loaded.session_id == "redis-session-1"
+        assert loaded.goals == ["Refactor auth module"]
+        assert loaded.constraints == ["No API changes"]
+
+    def test_load_nonexistent_returns_none(self, redis_provider):
+        assert redis_provider.load("does-not-exist") is None
+
+    def test_exists(self, redis_provider):
+        assert redis_provider.exists("redis-ex-1") is False
+        redis_provider.save(make_state("redis-ex-1"))
+        assert redis_provider.exists("redis-ex-1") is True
+
+    def test_checkpoint_seq_increments(self, redis_provider):
+        state = make_state("redis-seq-1")
+        assert state.checkpoint_seq == 0
+        redis_provider.save(state)
+        assert state.checkpoint_seq == 1
+        redis_provider.save(state)
+        assert state.checkpoint_seq == 2
+
+    def test_delete(self, redis_provider):
+        redis_provider.save(make_state("redis-del-1"))
+        assert redis_provider.exists("redis-del-1") is True
+        result = redis_provider.delete("redis-del-1")
+        assert result is True
+        assert redis_provider.exists("redis-del-1") is False
+
+    def test_delete_nonexistent_returns_false(self, redis_provider):
+        assert redis_provider.delete("never-existed") is False
+
+    def test_count(self, redis_provider):
+        assert redis_provider.count() == 0
+        redis_provider.save(make_state("redis-cnt-1"))
+        redis_provider.save(make_state("redis-cnt-2"))
+        assert redis_provider.count() == 2
+
+    def test_list_sessions(self, redis_provider):
+        redis_provider.save(make_state("redis-list-1"))
+        redis_provider.save(make_state("redis-list-2"))
+        sessions = redis_provider.list_sessions()
+        ids = [s["session_id"] for s in sessions]
+        assert "redis-list-1" in ids
+        assert "redis-list-2" in ids
+
+    def test_list_sessions_filter_by_status(self, redis_provider):
+        active = make_state("redis-active-1")
+        active.status = SessionStatus.ACTIVE
+        completed = make_state("redis-done-1")
+        completed.status = SessionStatus.COMPLETED
+        redis_provider.save(active)
+        redis_provider.save(completed)
+
+        active_only = redis_provider.list_sessions(status=SessionStatus.ACTIVE)
+        ids = [s["session_id"] for s in active_only]
+        assert "redis-active-1" in ids
+        assert "redis-done-1" not in ids
+
+    def test_decision_log(self, redis_provider):
+        state = make_state("redis-decisions-1")
+        redis_provider.save(state)
+        log = redis_provider.get_decision_log("redis-decisions-1")
+        assert len(log) == 1
+        assert log[0]["summary"] == "Use PyJWT"
+
+    def test_full_state_roundtrip(self, redis_provider):
+        state = make_state("redis-roundtrip-1")
+        state.next_steps = ["Deploy to staging"]
+        state.open_questions = ["Which cloud provider?"]
+        redis_provider.save(state)
+        loaded = redis_provider.load("redis-roundtrip-1")
+        assert loaded.next_steps == ["Deploy to staging"]
+        assert loaded.open_questions == ["Which cloud provider?"]
+        assert len(loaded.decisions) == 1
+        assert loaded.token_usage.prompt == 5000
+
+    def test_upsert_overwrites(self, redis_provider):
+        state = make_state("redis-upsert-1")
+        redis_provider.save(state)
+        state.goals.append("Second goal")
+        redis_provider.save(state)
+        loaded = redis_provider.load("redis-upsert-1")
+        assert "Second goal" in loaded.goals
+        assert loaded.checkpoint_seq == 2
