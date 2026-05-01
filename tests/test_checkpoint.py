@@ -112,13 +112,13 @@ class TestCheckpointResume:
             cp.set_goal("Original goal")
             cp.record_decision("Key decision")
 
-        state = resume("resume-test", store=store)
-        assert state is not None
-        assert "Original goal" in state.goals
+        ctx = resume("resume-test", store=store)
+        assert isinstance(ctx, str) and len(ctx) > 0
+        assert "Original goal" in ctx
 
     def test_resume_nonexistent_returns_none(self, store):
-        state = resume("no-such-session", store=store)
-        assert state is None
+        ctx = resume("no-such-session", store=store)
+        assert ctx == ""
 
     def test_checkpoint_resumes_existing_on_open(self, store):
         # First session

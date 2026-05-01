@@ -186,12 +186,23 @@ class Checkpoint:
 
     def record_tokens(
         self,
+        model: str | None = None,
         prompt: int = 0,
         completion: int = 0,
         cached: int = 0,
-        model: str | None = None,
     ) -> float:
-        """Record a token usage event. Returns cost of this call in USD."""
+        """Record a token usage event. Returns cost of this call in USD.
+
+        Args:
+            model:      Model name for cost lookup (e.g. "gpt-4o", "claude-3-5-sonnet").
+                        Falls back to the model set on the Checkpoint constructor.
+            prompt:     Number of prompt/input tokens used.
+            completion: Number of completion/output tokens generated.
+            cached:     Number of cached tokens (count toward prompt but billed cheaper).
+
+        Returns:
+            Cost of this call in USD.
+        """
         cost = self._tracker.record(
             prompt_tokens=prompt,
             completion_tokens=completion,
@@ -376,13 +387,21 @@ class Checkpoint:
         return forked_cp
 
 
-def resume(session_id: str, store: Store | None = None) -> TaskState | None:
+def resume(session_id: str, store: Store | None = None) -> str:
     """
-    Load a saved checkpoint by session_id.
-    Returns None if no checkpoint exists.
+    Load a saved checkpoint and return the resume context string.
+
+    Returns a structured prompt string ready to paste into a new LLM session.
+    Returns an empty string if no checkpoint exists for the given session_id.
+
+    To get the full TaskState object instead, use:
+        state = store.load(session_id)
     """
     s = store or DiskStore()
-    return s.load(session_id)
+    state = s.load(session_id)
+    if state is None:
+        return ""
+    return state.resume_prompt()
 
 
 def checkpoint(

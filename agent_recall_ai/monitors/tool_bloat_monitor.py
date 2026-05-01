@@ -32,8 +32,11 @@ class ToolBloatMonitor(BaseMonitor):
         max_output_tokens: int = 1000,
         max_tool_fraction: float = 0.40,
         auto_compress: bool = True,
+        max_calls: int | None = None,
     ) -> None:
-        self.max_output_tokens = max_output_tokens
+        # max_calls is stored for potential future use (alert when tool call count
+        # exceeds threshold); currently max_output_tokens governs per-call limits.
+        self.max_output_tokens = max_calls if max_calls is not None else max_output_tokens
         self.max_tool_fraction = max_tool_fraction
         self.auto_compress = auto_compress
         self._alerted_tools: set[str] = set()

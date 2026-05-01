@@ -31,10 +31,12 @@ class TokenMonitor(BaseMonitor):
         model: str = "gpt-4o-mini",
         warn_at: float = 0.75,
         compress_at: float = 0.88,
+        critical_at: float | None = None,
     ) -> None:
         self.model = model
         self.warn_at = warn_at
-        self.compress_at = compress_at
+        # critical_at is an alias for compress_at
+        self.compress_at = critical_at if critical_at is not None else compress_at
         self._warn_fired = False
         self._compress_fired = False
         self._context_limit = TokenCostTracker.context_limit(model)

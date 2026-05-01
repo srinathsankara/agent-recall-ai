@@ -353,3 +353,8 @@ class PIIRedactor:
     def add_rule(self, rule: RedactionRule) -> None:
         """Register an additional custom rule at runtime."""
         self._rules.append(rule)
+
+    def redact(self, text: str) -> str:
+        """Convenience alias for redact_text() — returns just the redacted string."""
+        redacted, _ = self.redact_text(text)
+        return redacted

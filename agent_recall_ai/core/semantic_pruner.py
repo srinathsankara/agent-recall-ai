@@ -130,7 +130,12 @@ class SemanticPruner:
         anchor_threshold: float = 0.50,
         target_ratio: float = 0.20,
         min_messages_kept: int = 4,
+        max_tokens: int | None = None,
     ) -> None:
+        # max_tokens sets the absolute token budget; maps to a target_ratio
+        # relative to the default 128k context limit if provided.
+        if max_tokens is not None:
+            target_ratio = max_tokens / 128_000
         self.use_embeddings = use_embeddings
         self.embedding_model = embedding_model
         self.anchor_threshold = anchor_threshold
@@ -323,6 +328,15 @@ class SemanticPruner:
                     if sent and _is_decision_anchor(sent) and len(sent) > 20:
                         log.append(sent[:200])
         return log
+
+    def compress(
+        self,
+        messages: list[dict[str, Any]],
+        model_context_limit: int = 128_000,
+        current_usage: int = 0,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """Alias for compress_context() for a more concise call site."""
+        return self.compress_context(messages, model_context_limit, current_usage)
 
     @property
     def embeddings_available(self) -> bool:

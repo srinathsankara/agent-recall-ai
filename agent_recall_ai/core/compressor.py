@@ -11,14 +11,23 @@ from __future__ import annotations
 import re
 
 
-def compress_tool_output(text: str, max_tokens: int = 500) -> tuple[str, bool]:
+def compress_tool_output(
+    text: str,
+    max_tokens: int = 500,
+    max_chars: int | None = None,
+) -> tuple[str, bool]:
     """
-    Compress a tool output to fit within max_tokens (approximate).
+    Compress a tool output to fit within a token/character budget.
     Returns (compressed_text, was_compressed).
+
+    Args:
+        text:       The tool output string to compress.
+        max_tokens: Approximate token budget (1 token ≈ 4 chars). Default 500.
+        max_chars:  Explicit character budget. Overrides max_tokens if provided.
 
     Uses character count as a cheap proxy for tokens (1 token ≈ 4 chars).
     """
-    max_chars = max_tokens * 4
+    max_chars = max_chars if max_chars is not None else (max_tokens * 4)
     if len(text) <= max_chars:
         return text, False
 
@@ -145,11 +154,19 @@ def compress_conversation_history(
     return result, tokens_saved
 
 
-def build_resume_context(state_dict: dict, max_tokens: int = 2000) -> str:
+def build_resume_context(state_dict, max_tokens: int = 2000) -> str:
     """
-    Build a compact resume context string from a serialized TaskState.
+    Build a compact resume context string from a TaskState or its dict representation.
     Intended to be prepended to the system prompt when resuming.
+
+    Args:
+        state_dict: A TaskState object or a dict from TaskState.model_dump().
+        max_tokens: Approximate maximum token budget for the output.
     """
+    # Accept both a TaskState object and a plain dict
+    if hasattr(state_dict, "model_dump"):
+        state_dict = state_dict.model_dump()
+
     parts: list[str] = []
 
     goals = state_dict.get("goals", [])

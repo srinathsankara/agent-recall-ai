@@ -183,6 +183,10 @@ class TaskState(BaseModel):
         self.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         return a
 
+    def as_resume_context(self) -> str:
+        """Alias for resume_prompt() — generate a structured resume context string."""
+        return self.resume_prompt()
+
     def resume_prompt(self) -> str:
         """
         Generate a structured resume prompt — paste this into a new session

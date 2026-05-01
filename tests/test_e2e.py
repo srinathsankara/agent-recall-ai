@@ -443,8 +443,8 @@ class TestTokenAccumulation:
 
 class TestMalformedStateHandling:
     def test_load_nonexistent_returns_none(self, mem):
-        state = resume("does-not-exist", store=mem)
-        assert state is None
+        ctx = resume("does-not-exist", store=mem)
+        assert ctx == ""
 
     def test_disk_store_corrupted_json_raises(self, tmp_path):
         """A manually corrupted state_json causes a validation error on load."""
