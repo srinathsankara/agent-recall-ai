@@ -134,7 +134,7 @@ Current regex covers 14 categories of secrets — enough for the common case.
 ## Test Status
 
 ```
-289 passed, 17 skipped (optional deps not installed), 0 failed
+354 passed, 30 skipped (optional deps not installed), 0 failed
 ```
 
 Run: `pytest tests/ -v`
@@ -152,6 +152,8 @@ Test files:
 - `tests/test_new_features.py`    — Prompt caching, thread forking, LangGraph adapter, OTLP
 - `tests/test_cli.py`             — CLI commands E2E: list, inspect, resume, export, delete, status, auto-save, install-hooks
 - `tests/test_e2e.py`             — Production-grade E2E scenarios: long sessions, forking, PII, concurrency, decorator, schema versioning
+- `tests/test_regression.py`     — One test class per bug fixed (prevents regressions across all 11 API fixes)
+- `tests/test_application.py`    — End-to-end workflow scenarios: full task lifecycle, adapters, monitors, privacy, fork isolation, async, persistence, export, compression, decorator
 
 ---
 

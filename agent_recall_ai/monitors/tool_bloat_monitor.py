@@ -34,13 +34,13 @@ class ToolBloatMonitor(BaseMonitor):
         auto_compress: bool = True,
         max_calls: int | None = None,
     ) -> None:
-        # max_calls is stored for potential future use (alert when tool call count
-        # exceeds threshold); currently max_output_tokens governs per-call limits.
-        self.max_output_tokens = max_calls if max_calls is not None else max_output_tokens
+        self.max_output_tokens = max_output_tokens
+        self.max_calls = max_calls  # alert when total tool calls exceeds this count
         self.max_tool_fraction = max_tool_fraction
         self.auto_compress = auto_compress
         self._alerted_tools: set[str] = set()
         self._fraction_alerted: bool = False
+        self._calls_alerted: bool = False
 
     def check(self, state: TaskState) -> list[dict]:
         return []
@@ -81,6 +81,24 @@ class ToolBloatMonitor(BaseMonitor):
                         "output_tokens": last_call.output_tokens,
                         "max_output_tokens": self.max_output_tokens,
                         "compressed": self.auto_compress,
+                    },
+                })
+
+        # Check total call count threshold (fire only once)
+        if self.max_calls is not None and not self._calls_alerted:
+            call_count = len(state.tool_calls)
+            if call_count >= self.max_calls:
+                self._calls_alerted = True
+                alerts.append({
+                    "alert_type": AlertType.TOOL_BLOAT,
+                    "severity": AlertSeverity.WARN,
+                    "message": (
+                        f"Tool call count {call_count} has reached the limit of {self.max_calls}. "
+                        "Consider whether further tool calls are necessary."
+                    ),
+                    "detail": {
+                        "call_count": call_count,
+                        "max_calls": self.max_calls,
                     },
                 })
 

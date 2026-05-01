@@ -255,6 +255,13 @@ class TestToolBloatMonitorMaxCalls:
     def test_max_calls_param_accepted(self):
         m = ToolBloatMonitor(max_calls=50)
         assert m is not None
+        assert m.max_calls == 50
+
+    def test_max_calls_does_not_override_max_output_tokens(self):
+        """max_calls must NOT clobber max_output_tokens — they are separate concerns."""
+        m = ToolBloatMonitor(max_output_tokens=1000, max_calls=50)
+        assert m.max_output_tokens == 1000
+        assert m.max_calls == 50
 
     def test_max_output_tokens_still_works(self):
         m = ToolBloatMonitor(max_output_tokens=500)
