@@ -87,8 +87,8 @@ if _LANGCHAIN_AVAILABLE:
             # Record decision anchors when the AI responds
             if isinstance(message, AIMessage):
                 content = message.content if isinstance(message.content, str) else str(message.content)
-                from ..core.semantic_pruner import _is_decision_anchor
-                if _is_decision_anchor(content):
+                from ..core.semantic_pruner import is_decision_anchor
+                if is_decision_anchor(content):
                     self._adapter.checkpoint.record_decision(
                         summary=content[:120],
                         reasoning="auto-extracted from AI response",

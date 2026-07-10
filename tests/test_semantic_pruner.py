@@ -4,34 +4,34 @@ from __future__ import annotations
 from agent_recall_ai.core.semantic_pruner import (
     SemanticPruner,
     _estimate_tokens,
-    _is_decision_anchor,
+    is_decision_anchor,
     _keyword_score,
 )
 
 
 class TestDecisionAnchorDetection:
     def test_decided_is_anchor(self):
-        assert _is_decision_anchor("We decided to use PostgreSQL over MongoDB")
+        assert is_decision_anchor("We decided to use PostgreSQL over MongoDB")
 
     def test_rejected_is_anchor(self):
-        assert _is_decision_anchor("Rejected the Redis approach because of cost")
+        assert is_decision_anchor("Rejected the Redis approach because of cost")
 
     def test_architecture_is_anchor(self):
-        assert _is_decision_anchor("This is an architecture decision")
+        assert is_decision_anchor("This is an architecture decision")
 
     def test_because_is_anchor(self):
-        assert _is_decision_anchor("Chose FastAPI because it has better async support")
+        assert is_decision_anchor("Chose FastAPI because it has better async support")
 
     def test_must_not_is_anchor(self):
-        assert _is_decision_anchor("Must not change the public API surface")
+        assert is_decision_anchor("Must not change the public API surface")
 
     def test_constraint_is_anchor(self):
-        assert _is_decision_anchor("Constraint: no external dependencies")
+        assert is_decision_anchor("Constraint: no external dependencies")
 
     def test_plain_message_not_anchor(self):
-        assert not _is_decision_anchor("The current directory has 42 files")
-        assert not _is_decision_anchor("Running pip install requests")
-        assert not _is_decision_anchor("ls -la /home/user")
+        assert not is_decision_anchor("The current directory has 42 files")
+        assert not is_decision_anchor("Running pip install requests")
+        assert not is_decision_anchor("ls -la /home/user")
 
 
 class TestKeywordScore:

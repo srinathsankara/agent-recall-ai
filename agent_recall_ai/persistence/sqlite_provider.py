@@ -124,10 +124,10 @@ class SQLiteProvider:
             )
             # Sync decision log (delete old, insert new)
             conn.execute("DELETE FROM decision_log WHERE session_id = ?", (state.session_id,))
-            from ..core.semantic_pruner import _is_decision_anchor
+            from ..core.semantic_pruner import is_decision_anchor
             for d in state.decisions:
                 anchor_text = d.summary + " " + d.reasoning
-                is_anchor = 1 if _is_decision_anchor(anchor_text) else 0
+                is_anchor = 1 if is_decision_anchor(anchor_text) else 0
                 conn.execute(
                     "INSERT INTO decision_log (session_id, decision_summary, is_anchor, timestamp) "
                     "VALUES (?,?,?,?)",

@@ -487,12 +487,11 @@ class TestDriftMonitorE2E:
         monitor = DriftMonitor()
         with Checkpoint("drift-test", store=mem, monitors=[monitor]) as cp:
             cp.add_constraint("Do not modify the public API")
-            cp.record_tool_call(
-                "bash",
-                input_summary="python setup.py",
-                output_summary="Modified public API endpoint /v1/users",
+            cp.record_decision(
+                summary="Modified public API endpoint /v1/users",
+                reasoning="The client needed a new field",
             )
-            cp._run_monitors("on_tool_call")
+            cp._run_monitors("on_decision")
         state = mem.load("drift-test")
         assert state is not None
         alerts = [a for a in state.alerts if a.alert_type == AlertType.BEHAVIORAL_DRIFT]

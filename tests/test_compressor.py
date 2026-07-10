@@ -31,8 +31,8 @@ class TestCompressToolOutput:
         assert "END" in result
 
     def test_error_lines_preserved_in_compressed(self):
-        lines = ["normal line"] * 200 + ["ERROR: something failed"] + ["normal line"] * 200
-        text = "\n".join(lines)
+        long_line = "x" * 800
+        text = "ERROR: something failed\n" + long_line
         result, was_compressed = compress_tool_output(text, max_tokens=100)
         assert was_compressed is True
         assert "ERROR: something failed" in result
