@@ -70,7 +70,7 @@ class RedisProvider:
         self._prefix = prefix
         self._default_ttl = default_ttl
         self._enable_pubsub = enable_pubsub
-        self._client: Any = _redis_module.from_url(url, decode_responses=True)
+        self._client: Any = _redis_module.from_url(url, decode_responses=True, socket_connect_timeout=5, socket_timeout=5)
 
     # ── Key helpers ───────────────────────────────────────────────────────────
 
@@ -225,3 +225,16 @@ class RedisProvider:
         except Exception as exc:
             logger.warning("Redis ping failed: %s", exc)
             return False
+
+    def close(self) -> None:
+        """Close the underlying Redis connection pool."""
+        try:
+            self._client.close()
+        except Exception as exc:
+            logger.warning("Redis close failed: %s", exc)
+
+    def __enter__(self) -> RedisProvider:
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()

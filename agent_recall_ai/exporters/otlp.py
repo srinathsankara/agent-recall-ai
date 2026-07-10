@@ -54,6 +54,7 @@ Jaeger (local dev)
 """
 from __future__ import annotations
 
+import atexit
 import logging
 import os
 from datetime import datetime
@@ -148,6 +149,7 @@ class OTLPExporter:
         self._provider = TracerProvider(resource=resource)
         self._provider.add_span_processor(BatchSpanProcessor(self._span_exporter))
         self._tracer = self._provider.get_tracer(service_name)
+        atexit.register(self.shutdown)
 
     def _build_exporter(self, use_grpc: bool) -> SpanExporter:
         if use_grpc and _GRPC_EXPORTER_AVAILABLE:

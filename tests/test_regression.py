@@ -335,6 +335,7 @@ class TestCLIEntryPoint:
         r = subprocess.run(
             [sys.executable, "-m", "agent_recall_ai", "--help"],
             capture_output=True,
+            timeout=30,
         )
         assert r.returncode == 0, f"CLI failed: {r.stderr[:200]}"
 
@@ -344,6 +345,7 @@ class TestCLIEntryPoint:
         r = subprocess.run(
             [sys.executable, "-m", "agent_recall_ai", "list"],
             capture_output=True,
+            timeout=30,
         )
         assert r.returncode == 0
 
@@ -353,5 +355,6 @@ class TestCLIEntryPoint:
         r = subprocess.run(
             [sys.executable, "-m", "agent_recall_ai", "status"],
             capture_output=True,
+            timeout=30,
         )
         assert r.returncode == 0
