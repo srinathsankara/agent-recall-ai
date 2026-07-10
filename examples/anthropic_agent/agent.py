@@ -5,7 +5,7 @@ Demonstrates the AnthropicAdapter wrapping claude-haiku for a
 data pipeline analysis task, with cost and drift monitoring.
 
 Run:
-    ANTHROPIC_API_KEY=sk-ant-... python examples/anthropic_agent/agent.py
+    ANTHROPIC_API_KEY=<your-api-key> python examples/anthropic_agent/agent.py
 """
 from __future__ import annotations
 
