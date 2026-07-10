@@ -86,11 +86,11 @@ packages = ["agent_recall_ai"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths    = ["tests"]
-addopts      = "--cov=agent_recall_ai --cov-report=term-missing --cov-report=xml"
+addopts      = "--cov=agent_recall_ai --cov-branch --cov-report=term-missing --cov-report=xml"
 
 [tool.coverage.run]
 source = ["agent_recall_ai"]
-omit = ["*/tests/*", "*/cli/*"]
+branch = true
 
 [tool.coverage.report]
 exclude_lines = [
