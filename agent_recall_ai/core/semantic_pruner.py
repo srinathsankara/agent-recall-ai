@@ -71,7 +71,7 @@ def _extract_text(message: dict[str, Any]) -> str:
     return str(content)
 
 
-def _is_decision_anchor(text: str) -> bool:
+def is_decision_anchor(text: str) -> bool:
     """Return True if the message contains decision anchor keywords."""
     lower = text.lower()
     return any(kw in lower for kw in _ANCHOR_KEYWORDS)
@@ -167,7 +167,7 @@ class SemanticPruner:
         roles = [m.get("role", "user") for m in messages]
 
         # Anchor detection (always runs, regardless of embedding availability)
-        is_anchor = [_is_decision_anchor(t) or roles[i] == "system" for i, t in enumerate(texts)]
+        is_anchor = [is_decision_anchor(t) or roles[i] == "system" for i, t in enumerate(texts)]
 
         # Semantic or keyword scoring
         if self._embeddings_available and self._embedder is not None:
@@ -323,12 +323,12 @@ class SemanticPruner:
         log: list[str] = []
         for msg in messages:
             text = _extract_text(msg)
-            if _is_decision_anchor(text):
+            if is_decision_anchor(text):
                 # Extract the most relevant sentence
                 sentences = re.split(r"[.!?]", text)
                 for sent in sentences:
                     sent = sent.strip()
-                    if sent and _is_decision_anchor(sent) and len(sent) > 20:
+                    if sent and is_decision_anchor(sent) and len(sent) > 20:
                         log.append(sent[:200])
         return log
 

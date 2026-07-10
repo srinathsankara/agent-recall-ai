@@ -218,8 +218,8 @@ class _WrappedAnthropicMessages:
                 cached_tokens=cached,
             )
             if cached > 0:
-                # Store per-call cache savings for dashboards / monitors
-                self._adapter.checkpoint.state.metadata.setdefault("cache_savings", []).append(
+                savings = self._adapter.checkpoint.state.metadata.setdefault("cache_savings", [])
+                savings.append(
                     {
                         "model": model,
                         "cache_read_tokens": cache_read,
@@ -227,6 +227,9 @@ class _WrappedAnthropicMessages:
                         "total_input_tokens": usage.input_tokens,
                     }
                 )
+                # Cap to last 100 entries to prevent unbounded memory growth
+                if len(savings) > 100:
+                    savings[:] = savings[-100:]
                 logger.debug(
                     "Prompt cache hit: read=%d write=%d / total=%d",
                     cache_read, cache_write, usage.input_tokens,

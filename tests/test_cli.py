@@ -14,7 +14,7 @@ import pytest
 from typer.testing import CliRunner
 
 from agent_recall_ai.cli.main import app
-from agent_recall_ai.core.state import SessionStatus, TaskState
+from agent_recall_ai.core.state import AlertSeverity, AlertType, SessionStatus, TaskState
 from agent_recall_ai.storage.disk import DiskStore
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
@@ -49,12 +49,8 @@ def _seed_session(
     state.add_decision("Use PyJWT", reasoning="Better maintained")
     state.add_file("auth/tokens.py", action="modified")
     state.add_alert(
-        alert_type=state.alerts.__class__ if False else __import__(
-            "agent_recall_ai.core.state", fromlist=["AlertType"]
-        ).AlertType.TOKEN_PRESSURE,
-        severity=__import__(
-            "agent_recall_ai.core.state", fromlist=["AlertSeverity"]
-        ).AlertSeverity.WARN,
+        alert_type=AlertType.TOKEN_PRESSURE,
+        severity=AlertSeverity.WARN,
         message="Context at 75%",
     )
     state.cost_usd = cost

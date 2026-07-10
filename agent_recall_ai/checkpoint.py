@@ -97,18 +97,7 @@ class Checkpoint:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        if exc_type is not None:
-            self._state.status = SessionStatus.FAILED
-            # Truncate exc_val to prevent PII/secrets leaking into stored alerts.
-            # The full traceback stays in application logs, not in the checkpoint.
-            exc_msg = str(exc_val)[:200] if exc_val else ""
-            self._state.add_alert(
-                AlertType.BEHAVIORAL_DRIFT,
-                AlertSeverity.ERROR,
-                f"Session ended with exception: {exc_type.__name__}: {exc_msg}",
-            )
-        else:
-            self._state.status = SessionStatus.COMPLETED
+        self._finalize(exc_type, exc_val)
         self.save()
 
     # ── Async context manager ─────────────────────────────────────────────────
@@ -117,6 +106,13 @@ class Checkpoint:
         return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self._finalize(exc_type, exc_val)
+        await asyncio.to_thread(self.save)
+
+    # ── Internal finalizer ────────────────────────────────────────────────────
+
+    def _finalize(self, exc_type: Any, exc_val: Any) -> None:
+        """Shared exit logic for sync and async context managers."""
         if exc_type is not None:
             self._state.status = SessionStatus.FAILED
             exc_msg = str(exc_val)[:200] if exc_val else ""
@@ -127,8 +123,6 @@ class Checkpoint:
             )
         else:
             self._state.status = SessionStatus.COMPLETED
-        # Non-blocking save — disk I/O off the event loop
-        await asyncio.to_thread(self.save)
 
     # ── Goal and constraint management ────────────────────────────────────────
 

@@ -34,9 +34,8 @@ class TestCompressToolOutput:
         lines = ["normal line"] * 200 + ["ERROR: something failed"] + ["normal line"] * 200
         text = "\n".join(lines)
         result, was_compressed = compress_tool_output(text, max_tokens=100)
-        # Error line should survive compression (it's in head or tail)
-        # Note: head/tail approach — error may or may not be in the sample depending on position
         assert was_compressed is True
+        assert "ERROR: something failed" in result
 
 
 class TestCompressDecisionLog:

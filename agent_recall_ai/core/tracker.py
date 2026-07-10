@@ -116,6 +116,7 @@ class TokenCostTracker:
     def __init__(self, model: str = "gpt-4o-mini") -> None:
         self.model = model
         self._snapshots: list[UsageSnapshot] = []
+        self._total = UsageSnapshot()
 
     def record(
         self,
@@ -135,17 +136,18 @@ class TokenCostTracker:
             call_count=1,
         )
         self._snapshots.append(snap)
+        self._total.prompt_tokens += prompt_tokens
+        self._total.completion_tokens += completion_tokens
+        self._total.cached_tokens += cached_tokens
+        self._total.cost_usd += cost
+        self._total.call_count += 1
+        # Cap snapshots to prevent unbounded memory growth
+        if len(self._snapshots) > 1000:
+            self._snapshots = self._snapshots[-500:]
         return cost
 
     def total(self) -> UsageSnapshot:
-        total = UsageSnapshot()
-        for s in self._snapshots:
-            total.prompt_tokens += s.prompt_tokens
-            total.completion_tokens += s.completion_tokens
-            total.cached_tokens += s.cached_tokens
-            total.cost_usd += s.cost_usd
-            total.call_count += s.call_count
-        return total
+        return self._total
 
     def context_utilization(self, current_prompt_tokens: int, model: str | None = None) -> float:
         """Returns 0.0–1.0 how full the current context window is."""
