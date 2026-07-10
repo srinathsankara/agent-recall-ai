@@ -41,8 +41,15 @@ jobs:
         run: mypy agent_recall_ai/ --ignore-missing-imports
         continue-on-error: true  # Warn but don't fail on type issues in CI
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: pytest tests/ -v --tb=short -q
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   test-integrations:
     name: Integration Test (${{ matrix.extra }})
