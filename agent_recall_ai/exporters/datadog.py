@@ -9,7 +9,7 @@ Usage:
 
     # Or explicit:
     exporter = DatadogExporter(
-        api_key="dd-api-key-here",
+        api_key="<your-dd-api-key>",
         site="datadoghq.com",        # or datadoghq.eu, us3.datadoghq.com, etc.
         service="my-agent",
         env="production",
