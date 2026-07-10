@@ -143,7 +143,8 @@ if _LANGGRAPH_AVAILABLE:
         def _read(self, key: str) -> dict | None:
             try:
                 return self._store.load(key)
-            except Exception:
+            except Exception as exc:
+                logger.warning("Checkpoint read failed for %s: %s", key, exc)
                 return None
 
         # ── BaseCheckpointSaver interface ─────────────────────────────────────

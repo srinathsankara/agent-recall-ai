@@ -181,4 +181,4 @@ def _harvest_logs(agent: Any, adapter: smolagentsAdapter) -> None:
             try:
                 entry._ac_recorded = True
             except AttributeError:
-                pass  # frozen objects — skip marking
+                logger.debug("Could not mark log entry as recorded (frozen object)")

@@ -315,5 +315,6 @@ def _pkg_version() -> str:
     try:
         from importlib.metadata import version
         return version("agent-recall-ai")
-    except Exception:
+    except Exception as exc:
+        logger.debug("Could not determine package version: %s", exc)
         return "0.0.0"

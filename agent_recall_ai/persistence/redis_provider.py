@@ -137,8 +137,8 @@ class RedisProvider:
                     f"{self._prefix}:events",
                     json.dumps({"event": "checkpoint_saved", "session_id": state.session_id}),
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Redis pubsub publish failed: %s", exc)
 
     def load(self, session_id: str) -> TaskState | None:
         """Load a TaskState by session_id. Returns None if not found or expired."""
@@ -194,7 +194,8 @@ class RedisProvider:
         for raw in raw_decisions:
             try:
                 result.append(json.loads(raw))
-            except Exception:
+            except Exception as exc:
+                logger.warning("Failed to decode decision log entry: %s", exc)
                 result.append({"summary": raw, "is_anchor": False})
         return result
 
@@ -221,5 +222,6 @@ class RedisProvider:
         """Check if the Redis connection is alive."""
         try:
             return bool(self._client.ping())
-        except Exception:
+        except Exception as exc:
+            logger.warning("Redis ping failed: %s", exc)
             return False

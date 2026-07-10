@@ -131,8 +131,8 @@ if _LANGCHAIN_AVAILABLE:
                                 prompt_tokens=prompt,
                                 completion_tokens=completion,
                             )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("on_llm_end failed to record tokens: %s", exc)
 
         def on_tool_start(
             self,

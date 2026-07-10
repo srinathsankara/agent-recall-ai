@@ -156,7 +156,8 @@ class DiskStore:
         for row in rows:
             try:
                 state = TaskState.model_validate_json(row["state_json"])
-            except Exception:
+            except Exception as exc:
+                logger.warning("Failed to deserialize session %s: %s", row.get("session_id", "?"), exc)
                 continue
             for d in state.decisions:
                 if query_lower in d.summary.lower() or query_lower in d.reasoning.lower():

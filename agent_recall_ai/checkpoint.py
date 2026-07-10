@@ -39,6 +39,7 @@ from typing import Any
 from .core.state import AlertSeverity, AlertType, SessionStatus, TaskState
 from .core.tracker import TokenCostTracker
 from .monitors.base import BaseMonitor
+from .monitors.cost_monitor import CostBudgetExceeded
 from .storage.disk import DiskStore
 from .storage.memory import MemoryStore
 
@@ -314,8 +315,6 @@ class Checkpoint:
                         detail=alert_dict.get("detail"),
                     )
             except Exception as exc:
-                # CostBudgetExceeded and similar should propagate
-                from .monitors.cost_monitor import CostBudgetExceeded
                 if isinstance(exc, CostBudgetExceeded):
                     self.save()
                     raise
