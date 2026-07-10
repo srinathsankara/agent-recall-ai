@@ -149,7 +149,7 @@ class SemanticPruner:
 
     def _try_load_embedder(self) -> None:
         try:
-            from sentence_transformers import SentenceTransformer  # type: ignore
+            from sentence_transformers import SentenceTransformer
             self._embedder = SentenceTransformer(self.embedding_model)
             self._embeddings_available = True
             logger.info("SemanticPruner: using %s for embeddings", self.embedding_model)
@@ -192,12 +192,15 @@ class SemanticPruner:
         as a proxy for how much reasoning content a message carries.
         """
         try:
-            import numpy as np  # type: ignore
+            import numpy as np
             reference = (
                 "architectural decision reasoning because rejected alternative chosen approach"
             )
             all_texts = [reference] + texts
-            embeddings = self._embedder.encode(all_texts, convert_to_numpy=True, show_progress_bar=False)
+            if self._embedder is not None:
+                embeddings = self._embedder.encode(all_texts, convert_to_numpy=True, show_progress_bar=False)
+            else:
+                return [0.5] * len(texts)
             ref_emb = embeddings[0]
             msg_embs = embeddings[1:]
 

@@ -14,7 +14,7 @@ Detection strategy:
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..core.state import AlertSeverity, AlertType
 from .base import BaseMonitor
@@ -107,8 +107,8 @@ class PackageHallucinationMonitor(BaseMonitor):
         self._known = _KNOWN_SAFE | (extra_known or set())
         self._alerted_packages: set[str] = set()
 
-    def check(self, state: TaskState) -> list[dict]:
-        alerts: list[dict] = []
+    def check(self, state: TaskState) -> list[dict[str, Any]]:
+        alerts: list[dict[str, Any]] = []
         recent_calls = state.tool_calls[-10:]
 
         for tc in recent_calls:

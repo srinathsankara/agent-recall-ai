@@ -14,7 +14,9 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from io import TextIOWrapper
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich import box
@@ -28,8 +30,13 @@ from ..storage.disk import DiskStore
 
 if sys.platform == "win32":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        if isinstance(sys.stdout, TextIOWrapper):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except AttributeError:
+        pass
+    try:
+        if isinstance(sys.stderr, TextIOWrapper):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     except AttributeError:
         pass
 
@@ -52,7 +59,7 @@ def _get_store() -> DiskStore:
 def list_sessions(
     status: str | None = typer.Option(None, "--status", "-s", help="Filter: active|completed|failed"),
     limit: int = typer.Option(20, "--limit", "-n", help="Max sessions to show"),
-):
+) -> None:
     """List all saved checkpoints."""
     store = _get_store()
     status_filter: SessionStatus | None = None
@@ -107,7 +114,7 @@ def list_sessions(
 def inspect(
     session_id: str = typer.Argument(..., help="Session ID to inspect"),
     full: bool = typer.Option(False, "--full", "-f", help="Show all decisions and tool calls"),
-):
+) -> None:
     """Show full details for a checkpoint."""
     store = _get_store()
     state = store.load(session_id)
@@ -196,7 +203,7 @@ def inspect(
 @app.command()
 def resume(
     session_id: str = typer.Argument(..., help="Session ID to resume"),
-):
+) -> None:
     """Print the resume prompt — paste this into a new agent session."""
     store = _get_store()
     state = store.load(session_id)
@@ -222,7 +229,7 @@ def export(
     session_id: str = typer.Argument(..., help="Session ID to export"),
     format: str = typer.Option("json", "--format", "-f", help="Output format: json | agenttest | handoff"),
     output: str | None = typer.Option(None, "--output", "-o", help="Output file (default: stdout)"),
-):
+) -> None:
     """Export a checkpoint as JSON, agenttest fixture, or handoff payload."""
     store = _get_store()
     state = store.load(session_id)
@@ -248,7 +255,7 @@ def export(
         print(content)
 
 
-def _export_as_agenttest(state) -> str:
+def _export_as_agenttest(state: Any) -> str:
     """Generate an agenttest-compatible test file from a checkpoint."""
     goals = "\n".join(f"#   - {g}" for g in state.goals)
     decisions_str = "\n".join(
@@ -298,7 +305,7 @@ def test_{test_func_name}_behavior(prompt: str) -> str:
 def delete(
     session_id: str = typer.Argument(..., help="Session ID to delete"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
-):
+) -> None:
     """Delete a checkpoint."""
     store = _get_store()
     if not store.exists(session_id):
@@ -318,7 +325,7 @@ def delete(
 
 
 @app.command()
-def status():
+def status() -> None:
     """Show overall checkpoint statistics."""
     store = _get_store()
     sessions = store.list_sessions(limit=1000)
@@ -368,7 +375,7 @@ def install_hooks(
         False, "--dry-run",
         help="Print what would be changed without writing anything.",
     ),
-):
+) -> None:
     """
     Install agent-recall-ai hooks into your AI coding tool.
 
@@ -478,7 +485,7 @@ def install_hooks(
 def auto_save(
     session_id: str = typer.Option(..., "--session", "-s", help="Session ID to save"),
     event: str = typer.Option("hook", "--event", "-e", help="Event name (for logging)"),
-):
+) -> None:
     """
     Auto-save the current checkpoint state (called by hooks).
 

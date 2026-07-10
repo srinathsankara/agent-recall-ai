@@ -155,12 +155,12 @@ class RedisProvider:
         self,
         status: SessionStatus | None = None,
         limit: int = 50,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """List sessions ordered by most recently updated."""
         # Get session IDs from the sorted index (descending by timestamp)
         session_ids = self._client.zrevrange(self._index_key(), 0, limit * 2)
 
-        results: list[dict] = []
+        results: list[dict[str, Any]] = []
         pipe = self._client.pipeline(transaction=False)
         for sid in session_ids:
             pipe.hgetall(self._meta_key(sid))
@@ -187,10 +187,10 @@ class RedisProvider:
 
         return results
 
-    def get_decision_log(self, session_id: str) -> list[dict]:
+    def get_decision_log(self, session_id: str) -> list[dict[str, Any]]:
         """Fast retrieval of the decision log without loading the full state."""
         raw_decisions = self._client.lrange(self._decisions_key(session_id), 0, -1)
-        result: list[dict] = []
+        result: list[dict[str, Any]] = []
         for raw in raw_decisions:
             try:
                 result.append(json.loads(raw))

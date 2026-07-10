@@ -38,8 +38,8 @@ jobs:
         run: ruff check agent_recall_ai/ tests/
 
       - name: Type check with mypy
-        run: mypy agent_recall_ai/ --ignore-missing-imports
-        continue-on-error: true  # Warn but don't fail on type issues in CI
+        run: mypy agent_recall_ai/
+        continue-on-error: true  # Warn but don't fail CI on type issues (legacy exemptions)
 
       - name: Run tests with coverage
         run: pytest tests/ -v --tb=short -q

@@ -7,7 +7,7 @@ Uses keyword/pattern matching against the constraint list — no LLM required.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..core.state import AlertSeverity, AlertType
 from .base import BaseMonitor
@@ -41,11 +41,11 @@ class DriftMonitor(BaseMonitor):
         self.sensitivity = sensitivity
         self._alerted_decisions: set[str] = set()
 
-    def check(self, state: TaskState) -> list[dict]:
+    def check(self, state: TaskState) -> list[dict[str, Any]]:
         if not state.constraints:
             return []
 
-        alerts: list[dict] = []
+        alerts: list[dict[str, Any]] = []
         # Scan recent decisions (last 5) for constraint violations
         recent_decisions = state.decisions[-5:]
 

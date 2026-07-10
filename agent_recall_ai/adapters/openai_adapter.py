@@ -59,7 +59,7 @@ except ImportError:
 
 # ── ConversationRepair ────────────────────────────────────────────────────────
 
-def repair_conversation(messages: list[dict]) -> tuple[list[dict], int]:
+def repair_conversation(messages: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
     """
     Scan a message list for orphaned tool_call IDs and inject synthetic
     error tool results so the OpenAI API receives a valid history.

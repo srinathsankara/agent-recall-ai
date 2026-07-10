@@ -49,7 +49,7 @@ except ImportError:
 
 # ── Prompt-caching helpers ────────────────────────────────────────────────────
 
-def _inject_cache_breakpoints(kwargs: dict) -> dict:
+def _inject_cache_breakpoints(kwargs: dict[str, Any]) -> dict[str, Any]:
     """
     Return a *copy* of kwargs with Anthropic prompt-cache breakpoints injected.
 

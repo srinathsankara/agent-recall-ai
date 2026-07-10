@@ -33,7 +33,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, Pattern
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class SensitivityLevel(str, Enum):
 class RedactionRule:
     """A single PII detection pattern."""
     name: str
-    pattern: re.Pattern
+    pattern: Pattern[str]
     placeholder: str        # e.g. "[REDACTED:api_key]"
     severity: SensitivityLevel
     description: str = ""
@@ -86,7 +86,7 @@ class RedactionResult:
 
 # ── Built-in detection patterns ───────────────────────────────────────────────
 
-def _p(pattern: str) -> re.Pattern:
+def _p(pattern: str) -> Pattern[str]:
     return re.compile(pattern, re.IGNORECASE | re.MULTILINE)
 
 

@@ -14,6 +14,7 @@ Use `get_adapter(framework)` to retrieve a registered adapter class.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
 _ADAPTER_REGISTRY: dict[str, type[BaseAdapter]] = {}
 
 
-def register_adapter(name: str):
+def register_adapter(name: str) -> Callable[[type[BaseAdapter]], type[BaseAdapter]]:
     """Class decorator to register an adapter under a framework name."""
     def decorator(cls: type[BaseAdapter]) -> type[BaseAdapter]:
         _ADAPTER_REGISTRY[name.lower()] = cls
@@ -76,7 +77,7 @@ class BaseAdapter(ABC):
         """
         ...
 
-    def on_llm_start(self, model: str, messages: list[dict]) -> None:
+    def on_llm_start(self, model: str, messages: list[dict[str, Any]]) -> None:
         """Called before an LLM API call."""
 
     def on_llm_end(

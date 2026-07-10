@@ -176,7 +176,7 @@ class TaskState(BaseModel):
         return tc
 
     def add_alert(
-        self, alert_type: AlertType, severity: AlertSeverity, message: str, detail: dict | None = None
+        self, alert_type: AlertType, severity: AlertSeverity, message: str, detail: dict[str, Any] | None = None
     ) -> Alert:
         a = Alert(alert_type=alert_type, severity=severity, message=message, detail=detail or {})
         self.alerts.append(a)

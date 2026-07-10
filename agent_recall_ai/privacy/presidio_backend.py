@@ -41,6 +41,7 @@ Supported entity types (subset of Presidio's full list):
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class PresidioBackend:
         self._anonymizer = AnonymizerEngine()
         logger.debug("PresidioBackend initialized with entities: %s", self._entities)
 
-    def scan(self, text: str) -> list[dict]:
+    def scan(self, text: str) -> list[dict[str, Any]]:
         """
         Analyze text and return a list of detected PII items.
 
@@ -134,7 +135,7 @@ class PresidioBackend:
             for r in results
         ]
 
-    def anonymize(self, text: str) -> tuple[str, list[dict]]:
+    def anonymize(self, text: str) -> tuple[str, list[dict[str, Any]]]:
         """
         Detect and anonymize PII in text.
 

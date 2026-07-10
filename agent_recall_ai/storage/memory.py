@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import copy
 from datetime import datetime, timezone
+from typing import Any
 
 from ..core.state import SessionStatus, TaskState
 
@@ -29,7 +30,7 @@ class MemoryStore:
         self,
         status: SessionStatus | None = None,
         limit: int = 50,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         sessions = list(self._sessions.values())
         if status is not None:
             sessions = [s for s in sessions if s.status == status]

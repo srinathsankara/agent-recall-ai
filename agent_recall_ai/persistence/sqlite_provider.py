@@ -11,6 +11,8 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+from typing import Any
+
 from ..core.state import SessionStatus, TaskState
 
 
@@ -147,14 +149,14 @@ class SQLiteProvider:
         status: SessionStatus | None = None,
         framework: str | None = None,
         limit: int = 50,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         query = """
             SELECT session_id, status, framework, created_at, updated_at,
                    checkpoint_seq, cost_usd, total_tokens, goal_summary, decision_count
             FROM checkpoints
         """
         conditions: list[str] = []
-        params: list = []
+        params: list[Any] = []
 
         if status is not None:
             conditions.append("status = ?")
@@ -172,7 +174,7 @@ class SQLiteProvider:
             rows = conn.execute(query, params).fetchall()
             return [dict(r) for r in rows]
 
-    def search_decisions(self, query: str, limit: int = 20) -> list[dict]:
+    def search_decisions(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         """Full-text search over the decision log."""
         with self._connect() as conn:
             rows = conn.execute(

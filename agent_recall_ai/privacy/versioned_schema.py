@@ -31,7 +31,8 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from collections.abc import Callable
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ class VersionedSchema:
 
     def get_version(self, state_dict: dict[str, Any]) -> str:
         """Extract the schema version from a state dict. Returns '0.0.0' if missing."""
-        return state_dict.get("schema_version", "0.0.0")
+        return cast(str, state_dict.get("schema_version", "0.0.0"))
 
     def needs_migration(self, state_dict: dict[str, Any]) -> bool:
         """Return True if the state dict is not at the current version."""
@@ -170,7 +171,7 @@ class VersionedSchema:
 
         return state_dict
 
-    def list_migrations(self) -> list[dict]:
+    def list_migrations(self) -> list[dict[str, Any]]:
         """Return registered migrations as a list of dicts."""
         return [
             {

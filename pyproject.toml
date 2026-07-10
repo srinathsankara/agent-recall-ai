@@ -30,8 +30,6 @@ dependencies = [
     "typer>=0.12",
     "rich>=13.0",
     "pydantic>=2.0",
-    "diskcache>=5.6",
-    "tiktoken>=0.7",
 ]
 
 [project.optional-dependencies]
@@ -111,6 +109,31 @@ select = ["E", "F", "I", "UP"]
 ignore = ["E501"]
 
 [tool.mypy]
-python_version      = "3.10"
-strict              = false
+python_version      = "3.12"
+strict              = true
 ignore_missing_imports = true
+exclude             = ["examples/", "dashboard/", "scripts/", "proto/"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any     = true
+no_implicit_optional = true
+check_untyped_defs  = true
+
+[[tool.mypy.overrides]]
+module = ["tests/*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["numpy.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "agent_recall_ai.adapters.langgraph_adapter",
+    "agent_recall_ai.adapters.langchain_adapter",
+    "agent_recall_ai.adapters.smolagents_adapter",
+    "agent_recall_ai.adapters.crewai_adapter",
+    "agent_recall_ai.adapters.anthropic_adapter",
+]
+ignore_errors = true

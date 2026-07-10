@@ -6,7 +6,7 @@ Triggers automatic compression of bloated tool results.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..core.compressor import compress_tool_output
 from ..core.state import AlertSeverity, AlertType
@@ -42,14 +42,14 @@ class ToolBloatMonitor(BaseMonitor):
         self._fraction_alerted: bool = False
         self._calls_alerted: bool = False
 
-    def check(self, state: TaskState) -> list[dict]:
+    def check(self, state: TaskState) -> list[dict[str, Any]]:
         return []
 
-    def on_tool_call(self, state: TaskState) -> list[dict]:
+    def on_tool_call(self, state: TaskState) -> list[dict[str, Any]]:
         if not state.tool_calls:
             return []
 
-        alerts: list[dict] = []
+        alerts: list[dict[str, Any]] = []
         last_call = state.tool_calls[-1]
 
         # Check single tool output size

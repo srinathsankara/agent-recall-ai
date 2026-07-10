@@ -412,7 +412,7 @@ def checkpoint(
     auto_save_every: int = 10,
     redactor: Any | None = None,
     schema: Any | None = None,
-) -> Checkpoint | Callable:
+) -> Checkpoint | Callable[..., Any]:
     """
     Decorator **and** factory function.
 
@@ -448,7 +448,7 @@ def checkpoint(
             schema=schema,
         )
 
-    def decorator(fn: Callable) -> Callable:
+    def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
         sig = inspect.signature(fn)
         _injects_cp = "cp" in sig.parameters
 
@@ -484,7 +484,7 @@ def checkpoint(
         def __init__(self) -> None:
             self._cp: Checkpoint | None = None
 
-        def __call__(self, fn: Callable) -> Callable:           # @checkpoint("id")
+        def __call__(self, fn: Callable[..., Any]) -> Callable[..., Any]:           # @checkpoint("id")
             return decorator(fn)
 
         def __enter__(self) -> Checkpoint:                      # with checkpoint("id") as cp:

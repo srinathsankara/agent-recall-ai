@@ -9,6 +9,7 @@ Strategy:
 from __future__ import annotations
 
 import re
+from typing import Any
 
 
 def compress_tool_output(
@@ -62,7 +63,7 @@ def compress_tool_output(
     return compressed, True
 
 
-def compress_decision_log(decisions: list[dict], keep_recent: int = 5) -> list[dict]:
+def compress_decision_log(decisions: list[dict[str, Any]], keep_recent: int = 5) -> list[dict[str, Any]]:
     """
     Compress a list of decisions by summarizing older ones.
     Keeps the last `keep_recent` decisions verbatim.
@@ -89,11 +90,11 @@ def estimate_tokens(text: str) -> int:
 
 
 def compress_conversation_history(
-    messages: list[dict],
+    messages: list[dict[str, Any]],
     model_context_limit: int,
     target_utilization: float = 0.70,
     system_reserved: int = 500,
-) -> tuple[list[dict], int]:
+) -> tuple[list[dict[str, Any]], int]:
     """
     Compress a conversation history list to fit within target_utilization of context.
 
@@ -154,7 +155,7 @@ def compress_conversation_history(
     return result, tokens_saved
 
 
-def build_resume_context(state_dict, max_tokens: int = 2000) -> str:
+def build_resume_context(state_dict: Any, max_tokens: int = 2000) -> str:
     """
     Build a compact resume context string from a TaskState or its dict representation.
     Intended to be prepended to the system prompt when resuming.

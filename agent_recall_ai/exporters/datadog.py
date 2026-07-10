@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from .otlp import OTLPExporter
 
@@ -65,7 +66,7 @@ class DatadogExporter(OTLPExporter):
         self._env = env
         self._version = version
 
-    def _session_attrs(self, state: Any) -> dict:
+    def _session_attrs(self, state: Any) -> dict[str, Any]:
         attrs = super()._session_attrs(state)
         attrs["deployment.environment"] = self._env
         if self._version:

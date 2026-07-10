@@ -10,6 +10,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from ..core.state import SessionStatus, TaskState
 
@@ -104,14 +105,14 @@ class DiskStore:
         self,
         status: SessionStatus | None = None,
         limit: int = 50,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """List sessions with lightweight metadata (no full state_json)."""
         query = """
             SELECT session_id, status, created_at, updated_at,
                    checkpoint_seq, cost_usd, total_tokens, goal_summary
             FROM sessions
         """
-        params: list = []
+        params: list[Any] = []
         if status is not None:
             query += " WHERE status = ?"
             params.append(status.value)
@@ -136,7 +137,7 @@ class DiskStore:
             ).fetchone()
             return row is not None
 
-    def search_decisions(self, query: str, limit: int = 20) -> list[dict]:
+    def search_decisions(self, query: str, limit: int = 20) -> list[dict[str, Any]]:
         """
         Search decisions across all sessions by substring match.
 
@@ -145,7 +146,7 @@ class DiskStore:
         Returns list of dicts with: session_id, decision_summary, timestamp, goal_summary.
         """
         query_lower = query.lower()
-        results: list[dict] = []
+        results: list[dict[str, Any]] = []
 
         with self._connect() as conn:
             rows = conn.execute(

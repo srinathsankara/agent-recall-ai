@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..core.state import TaskState
@@ -20,18 +20,18 @@ class BaseMonitor(ABC):
     """
 
     @abstractmethod
-    def check(self, state: TaskState) -> list[dict]:
+    def check(self, state: TaskState) -> list[dict[str, Any]]:
         """
         Inspect state and return a list of alert dicts to attach.
         Each dict must include: alert_type, severity, message, detail.
         """
         ...
 
-    def on_tokens(self, state: TaskState) -> list[dict]:
+    def on_tokens(self, state: TaskState) -> list[dict[str, Any]]:
         return self.check(state)
 
-    def on_tool_call(self, state: TaskState) -> list[dict]:
+    def on_tool_call(self, state: TaskState) -> list[dict[str, Any]]:
         return []
 
-    def on_decision(self, state: TaskState) -> list[dict]:
+    def on_decision(self, state: TaskState) -> list[dict[str, Any]]:
         return []

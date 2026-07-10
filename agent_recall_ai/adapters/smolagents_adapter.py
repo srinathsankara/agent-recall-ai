@@ -75,7 +75,7 @@ class smolagentsAdapter(BaseAdapter):
         self._max_step_chars = max_step_chars
         self._step_count = 0
 
-    def wrap(self, agent: Any, **kwargs: Any) -> Any:
+    def wrap(self, agent: Any, **kwargs: Any) -> Any:  # type: ignore[override]
         """
         Wrap a smolagents agent.  Returns the same agent with an
         instrumented run() method.
@@ -89,8 +89,8 @@ class smolagentsAdapter(BaseAdapter):
         original_run = agent.run
 
         def _instrumented_run(task: str, *args: Any, **kw: Any) -> Any:
-            adapter._checkpoint.set_goal(task[:200])
-            adapter._checkpoint.save()
+            adapter.checkpoint.set_goal(task[:200])
+            adapter.checkpoint.save()
 
             # Wrap the internal step() method if accessible
             _wrap_step_method(agent, adapter)
@@ -105,7 +105,7 @@ class smolagentsAdapter(BaseAdapter):
             _harvest_logs(agent, adapter)
 
             final_answer = str(result)[:adapter._max_step_chars] if result else ""
-            adapter._checkpoint.record_decision(
+            adapter.checkpoint.record_decision(
                 summary="Agent run completed",
                 reasoning=final_answer,
                 tags=["smolagents", "final_answer"],
@@ -141,7 +141,7 @@ def _wrap_step_method(agent: Any, adapter: smolagentsAdapter) -> None:
 
             if thought or tool_name:
                 reasoning = (str(thought)[:300] + " → " + str(tool_output)[:200]).strip(" →")
-                adapter._checkpoint.record_decision(
+                adapter.checkpoint.record_decision(
                     summary=f"Step {step_num}: {tool_name or 'reasoning'}",
                     reasoning=reasoning[:adapter._max_step_chars],
                     tags=["smolagents", f"step:{step_num}"],
@@ -149,12 +149,12 @@ def _wrap_step_method(agent: Any, adapter: smolagentsAdapter) -> None:
 
             if tool_name:
                 adapter.on_tool_start(
-                    tool_name=tool_name,
-                    input_summary=str(tool_input)[:200],
+                    tool_name,
+                    tool_input=str(tool_input)[:200],
                 )
                 adapter.on_tool_end(
-                    tool_name=tool_name,
-                    output_summary=str(tool_output)[:200],
+                    tool_name,
+                    tool_output=str(tool_output)[:200],
                 )
 
         return result
@@ -173,10 +173,10 @@ def _harvest_logs(agent: Any, adapter: smolagentsAdapter) -> None:
         tool_name = getattr(entry, "tool_name", None) or ""
         observations = getattr(entry, "observations", None) or ""
         if tool_name and not getattr(entry, "_ac_recorded", False):
-            adapter.on_tool_start(tool_name=tool_name, input_summary="")
+            adapter.on_tool_start(tool_name, tool_input="")
             adapter.on_tool_end(
-                tool_name=tool_name,
-                output_summary=str(observations)[:300],
+                tool_name,
+                tool_output=str(observations)[:300],
             )
             try:
                 entry._ac_recorded = True

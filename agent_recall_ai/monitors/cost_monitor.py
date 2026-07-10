@@ -6,7 +6,7 @@ Fires CRITICAL and raises CostBudgetExceeded when cost exceeds budget_usd.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..core.state import AlertSeverity, AlertType
 from .base import BaseMonitor
@@ -49,8 +49,8 @@ class CostMonitor(BaseMonitor):
         self._warned = False
         self._exceeded = False
 
-    def check(self, state: TaskState) -> list[dict]:
-        alerts: list[dict] = []
+    def check(self, state: TaskState) -> list[dict[str, Any]]:
+        alerts: list[dict[str, Any]] = []
         cost = state.cost_usd
 
         if cost >= self.budget_usd and not self._exceeded:

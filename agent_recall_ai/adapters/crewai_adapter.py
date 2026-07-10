@@ -76,7 +76,7 @@ class CrewAIAdapter(BaseAdapter):
         self._record_task_outputs = record_task_outputs
         self._max_output_chars = max_output_chars
 
-    def wrap(self, crew: Any, **kwargs: Any) -> Any:
+    def wrap(self, crew: Any, **kwargs: Any) -> Any:  # type: ignore[override]
         """
         Wrap a CrewAI Crew instance.  Returns the same crew with an
         instrumented kickoff() method.
@@ -145,8 +145,8 @@ def _wrap_task(task: Any, adapter: CrewAIAdapter) -> None:
         agent_role = getattr(agent, "role", "unknown") if agent else "unknown"
 
         adapter.on_tool_start(
-            tool_name=f"task:{agent_role}",
-            input_summary=task_desc,
+            f"task:{agent_role}",
+            tool_input=task_desc,
         )
         try:
             result = original_execute(*args, **kwargs)
@@ -173,8 +173,8 @@ def _wrap_task(task: Any, adapter: CrewAIAdapter) -> None:
             )
 
         adapter.on_tool_end(
-            tool_name=f"task:{agent_role}",
-            output_summary=output[:200],
+            f"task:{agent_role}",
+            tool_output=output[:200],
         )
         return result
 

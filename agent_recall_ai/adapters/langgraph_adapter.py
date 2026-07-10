@@ -45,7 +45,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator, Iterator
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
@@ -66,12 +66,12 @@ except ImportError:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _thread_from_config(config: dict) -> str:
+def _thread_from_config(config: dict[str, Any]) -> str:
     """Extract thread_id from a LangGraph RunnableConfig."""
     return config.get("configurable", {}).get("thread_id", "default")
 
 
-def _checkpoint_id_from_config(config: dict) -> str | None:
+def _checkpoint_id_from_config(config: dict[str, Any]) -> str | None:
     return config.get("configurable", {}).get("checkpoint_id")
 
 
