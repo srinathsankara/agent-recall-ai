@@ -6,7 +6,7 @@ a long session would lose all decisions and progress when the context window fil
 With agent-recall-ai, every decision is preserved and the session is resumable.
 
 Run:
-    OPENAI_API_KEY=sk-... python examples/openai_agent/agent.py
+    OPENAI_API_KEY=<your-api-key> python examples/openai_agent/agent.py
 
 To resume a dead session:
     python -c "
